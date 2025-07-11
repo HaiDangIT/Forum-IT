@@ -1,0 +1,37 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model KhoaHoc {
+  KhoaHocId   Int       @id @default(autoincrement())
+  TenKhoaHoc  String
+  MoTa        String?
+  Gia         Float
+  VideoUrl    String?
+  HinhAnh     String?
+  baiHocs     BaiHoc[]  // Đây là khóa ngoại
+  CT_NguoiDung_KhoaHocs CT_NguoiDung_KhoaHoc[]  // Đây là khóa ngoại
+}
+
+model BaiHoc {
+  BaiHocId    Int       @id @default(autoincrement())
+  TieuDe      String
+  NoiDung     String?
+  VideoUrl    String?
+  HinhAnh     String?
+  KhoaHocId   Int
+  KhoaHoc     KhoaHoc   @relation(fields: [KhoaHocId], references: [KhoaHocId])  // Đây là khóa ngoại nhưng mà set theo khóa chính của bảng
+  CT_NguoiDung_BaiHocs CT_NguoiDung_BaiHoc[]
+}
