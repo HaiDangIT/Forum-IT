@@ -56,6 +56,234 @@ model Role {
   // Relations
   userRoles   UserRole[]
   roleClaims  RoleClaim[]
+<<<<<<< HEAD
+}
+
+model RoleClaim {
+  idRole             Int     @id
+  managepost         Boolean @default(false)
+  manageUser         Boolean @default(false)
+  can_create_news    Boolean @default(false)
+  can_view_reports   Boolean @default(false)
+  can_manage_topics_tags Boolean @default(false)
+  
+  // Relations
+  role Role @relation(fields: [idRole], references: [idRole], onDelete: Cascade)
+}
+
+model UserRole {
+  IdRole Int
+  IdUser Int
+  
+  // Relations
+  role Role @relation(fields: [IdRole], references: [idRole], onDelete: Cascade)
+  user User @relation(fields: [IdUser], references: [idUser], onDelete: Cascade)
+  
+  @@id([IdRole, IdUser])
+}
+
+model Skill {
+  idSkill     Int    @id @default(autoincrement())
+  Name        String @unique
+  Description String?
+  
+  // Relations
+  userSkills UserSkill[]
+}
+
+model UserSkill {
+  idUser            Int
+  idSkill           Int
+  levelskill        String?
+  YearsOfExperience Int?
+  
+  // Relations
+  user  User  @relation(fields: [idUser], references: [idUser], onDelete: Cascade)
+  skill Skill @relation(fields: [idSkill], references: [idSkill], onDelete: Cascade)
+  
+  @@id([idUser, idSkill])
+}
+
+model Follow {
+  idFollower  Int
+  idFollowing Int
+  FollowedAt  DateTime @default(now())
+  
+  // Relations
+  follower  User @relation("UserFollower", fields: [idFollower], references: [idUser], onDelete: Cascade)
+  following User @relation("UserFollowing", fields: [idFollowing], references: [idUser], onDelete: Cascade)
+  
+  @@id([idFollower, idFollowing])
+}
+
+model Post {
+  idPost                Int       @id @default(autoincrement())
+  idUser                Int
+  Title                 String
+  Content               String
+  PostType              String
+  SourceURL             String?
+  OriginalAuthor        String?
+  OriginalPublishedDate DateTime?
+  CreatedAt             DateTime  @default(now())
+  UpdatedAt             DateTime  @updatedAt
+  Status                String    @default("active")
+  viewcount             Int       @default(0)
+  moderated_by          Int?
+  moderated_at          DateTime?
+  WordCount             Int?
+  
+  // Relations
+  user       User       @relation(fields: [idUser], references: [idUser], onDelete: Cascade)
+  moderator  User?      @relation("ModeratedBy", fields: [moderated_by], references: [idUser])
+  comments   Comment[]
+  reactions  Reaction[]
+  reports    Report[]
+  postTags   PostTag[]
+}
+
+model Comment {
+  idComment       Int       @id @default(autoincrement())
+  idPost          Int
+  idUser          Int
+  Content         String
+  CreatedAt       DateTime  @default(now())
+  UpdatedAt       DateTime  @updatedAt
+  ParentCommentId Int?
+  IsDeleted       Boolean   @default(false)
+  Status          String    @default("active")
+  
+  // Relations
+  post          Post       @relation(fields: [idPost], references: [idPost], onDelete: Cascade)
+  user          User       @relation(fields: [idUser], references: [idUser], onDelete: Cascade)
+  parentComment Comment?   @relation("CommentReplies", fields: [ParentCommentId], references: [idComment])
+  replies       Comment[]  @relation("CommentReplies")
+  reactions     Reaction[]
+  reports       Report[]
+}
+
+model Reaction {
+  idReaction   Int      @id @default(autoincrement())
+  idUser       Int
+  idPost       Int?
+  idComment    Int?
+  ReactionType String
+  CreatedAt    DateTime @default(now())
+  
+  // Relations
+  user    User     @relation(fields: [idUser], references: [idUser], onDelete: Cascade)
+  post    Post?    @relation(fields: [idPost], references: [idPost], onDelete: Cascade)
+  comment Comment? @relation(fields: [idComment], references: [idComment], onDelete: Cascade)
+  
+  @@unique([idUser, idPost, idComment])
+}
+
+model Report {
+  idReport         Int      @id @default(autoincrement())
+  idUser           Int
+  idPost           Int?
+  idComment        Int?
+  Reason           String
+  ReportAt         DateTime @default(now())
+  Status           String   @default("pending")
+  ActionTaken      String?
+  ResolvedByIdUser Int?
+  Resolved_at      DateTime?
+  
+  // Relations
+  reportedBy User     @relation("ReportedBy", fields: [idUser], references: [idUser], onDelete: Cascade)
+  post       Post?    @relation(fields: [idPost], references: [idPost], onDelete: Cascade)
+  comment    Comment? @relation(fields: [idComment], references: [idComment], onDelete: Cascade)
+  resolvedBy User?    @relation("ResolvedBy", fields: [ResolvedByIdUser], references: [idUser])
+}
+
+model Message {
+  idMessage           Int      @id @default(autoincrement())
+  idSender            Int
+  idReceiver          Int
+  Content             String
+  SentAt              DateTime @default(now())
+  ReadAt              DateTime?
+  IsDeletedBySender   Boolean  @default(false)
+  IsDeletedByReceiver Boolean  @default(false)
+  
+  // Relations
+  sender      User         @relation("MessageSender", fields: [idSender], references: [idUser], onDelete: Cascade)
+  receiver    User         @relation("MessageReceiver", fields: [idReceiver], references: [idUser], onDelete: Cascade)
+  attachments Attachment[]
+}
+
+model Attachment {
+  idAttachment Int      @id @default(autoincrement())
+  IdMessage    Int
+  FileURL      String
+  FileName     String
+  FileType     String
+  FileSize     Int
+  UploadedAt   DateTime @default(now())
+  ThumbnailURL String?
+  
+  // Relations
+  message Message @relation(fields: [IdMessage], references: [idMessage], onDelete: Cascade)
+}
+
+model Topic {
+  idTopic        Int    @id @default(autoincrement())
+  Name           String @unique
+  Description    String?
+  createdAt      DateTime @default(now())
+  IdUserCreated  Int
+  
+  // Relations
+  creator    User        @relation(fields: [IdUserCreated], references: [idUser], onDelete: Cascade)
+  topicTags  TopicTag[]
+}
+
+model Tag {
+  idTag         Int    @id @default(autoincrement())
+  Name          String @unique
+  Description   String?
+  CreatedAt     DateTime @default(now())
+  IdUserCreated Int
+  
+  // Relations
+  creator   User       @relation(fields: [IdUserCreated], references: [idUser], onDelete: Cascade)
+  postTags  PostTag[]
+  topicTags TopicTag[]
+}
+
+model PostTag {
+  idPost Int
+  idTag  Int
+  
+  // Relations
+  post Post @relation(fields: [idPost], references: [idPost], onDelete: Cascade)
+  tag  Tag  @relation(fields: [idTag], references: [idTag], onDelete: Cascade)
+  
+  @@id([idPost, idTag])
+}
+
+model TopicTag {
+  idTopic Int
+  idTag   Int
+  
+  // Relations
+  topic Topic @relation(fields: [idTopic], references: [idTopic], onDelete: Cascade)
+  tag   Tag   @relation(fields: [idTag], references: [idTag], onDelete: Cascade)
+  
+  @@id([idTopic, idTag])
+}
+
+model BadWord {
+  idBadWord Int      @id @default(autoincrement())
+  Word      String   @unique
+  AddedBy   Int
+  CreatedAt DateTime @default(now())
+  
+  // Relations
+  addedByUser User @relation(fields: [AddedBy], references: [idUser], onDelete: Cascade)
+=======
+>>>>>>> 52c31b1 ([Update] Base)
 }
 
 model RoleClaim {

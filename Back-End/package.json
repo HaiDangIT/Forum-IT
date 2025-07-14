@@ -18,7 +18,11 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node src/index.js",
+<<<<<<< HEAD
     "migrate": "prisma migrate dev "
+=======
+    "migrate": "prisma migrate dev"
+>>>>>>> 52c31b1 ([Update] Base)
   },
   "devDependencies": {
     "prisma": "^6.11.1"
