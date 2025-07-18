@@ -101,8 +101,10 @@ model User {
   gender            Gender?
   avatar            String?     @db.VarChar(500)
   dateOfBirth       DateTime?   @db.Date
-  regionId          String?     
+  regionId          String?
   region            Region?     @relation(fields: [regionId], references: [id])
+  majorId           String?
+  major             Major?      @relation(fields: [majorId], references: [id])
   bio               String?     @db.VarChar(500)
   occupation        String?     @db.VarChar(100)
   experience        ExperienceLevel?
@@ -114,21 +116,21 @@ model User {
   // Relations
   roles                 UserRole[]
   skills                UserSkill[]
-  followers             Follow[]         @relation("UserFollowing")
-  following             Follow[]         @relation("UserFollower")
+  followers             Follow[]         @relation("userFollowing")
+  following             Follow[]         @relation("userFollower")
   posts                 Post[]
   comments              Comment[]
   reactions             Reaction[]
-  reportsMade           Report[]         @relation("ReportedBy")
-  messagesSent          Message[]        @relation("MessageSender")
-  messagesReceived      Message[]        @relation("MessageReceiver")
+  reportsMade           Report[]         @relation("reportedBy")
+  messagesSent          Message[]        @relation("messageSender")
+  messagesReceived      Message[]        @relation("messageReceiver")
   topicsCreated         Topic[]
   tagsCreated           Tag[]
   badWordsAdded         BadWord[]
-  moderatedPosts        Post[]           @relation("ModeratedBy")
-  resolvedReports       Report[]         @relation("ResolvedBy")
-  notifications         Notification[]   @relation("NotificationRecipient")
-  notificationsTriggered Notification[]  @relation("NotificationTrigger")
+  moderatedPosts        Post[]           @relation("moderatedBy")
+  resolvedReports       Report[]         @relation("resolvedBy")
+  notifications         Notification[]   @relation("notificationRecipient")
+  notificationsTriggered Notification[]  @relation("notificationTrigger")
 
   @@index([email])
   @@index([username])
@@ -183,11 +185,21 @@ model Follow {
   followedAt  DateTime @default(now()) @db.Timestamptz(6)
 
   // Relations
-  follower    User     @relation("UserFollower", fields: [followerId], references: [id], onDelete: Cascade)
-  following   User     @relation("UserFollowing", fields: [followingId], references: [id], onDelete: Cascade)
+  follower    User     @relation("userFollower", fields: [followerId], references: [id], onDelete: Cascade)
+  following   User     @relation("userFollowing", fields: [followingId], references: [id], onDelete: Cascade)
 
   @@id([followerId, followingId])
   @@map("follows")
+}
+
+model Major {
+  id          String   @id @default(cuid())
+  name        String   @unique @db.VarChar(100)
+  description String?  @db.VarChar(255)
+  users       User[]
+  createdAt   DateTime @default(now()) @db.Timestamptz(6)
+
+  @@map("majors")
 }
 
 model Post {
@@ -211,7 +223,7 @@ model Post {
 
   // Relations
   user                  User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  moderator             User?      @relation("ModeratedBy", fields: [moderatedById], references: [id])
+  moderator             User?      @relation("moderatedBy", fields: [moderatedById], references: [id])
   comments              Comment[]
   reactions             Reaction[]
   reports               Report[]
@@ -239,8 +251,8 @@ model Comment {
   // Relations
   post            Post?         @relation(fields: [postId], references: [id], onDelete: Cascade)
   user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  parentComment   Comment?      @relation("CommentReplies", fields: [parentCommentId], references: [id])
-  replies         Comment[]     @relation("CommentReplies")
+  parentComment   Comment?      @relation("commentReplies", fields: [parentCommentId], references: [id])
+  replies         Comment[]     @relation("commentReplies")
   reactions       Reaction[]
   reports         Report[]
 
@@ -253,17 +265,17 @@ model Comment {
 }
 
 model Reaction {
-  id        String       @id @default(cuid())
-  userId    String
-  postId    String?
-  commentId String?
-  reactionType  ReactionType
-  createdAt DateTime     @default(now()) @db.Timestamptz(6)
+  id           String       @id @default(cuid())
+  userId       String
+  postId       String?
+  commentId    String?
+  reactionType ReactionType
+  createdAt    DateTime     @default(now()) @db.Timestamptz(6)
 
   // Relations
-  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  post      Post?        @relation(fields: [postId], references: [id], onDelete: Cascade)
-  comment   Comment?     @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post         Post?        @relation(fields: [postId], references: [id], onDelete: Cascade)
+  comment      Comment?     @relation(fields: [commentId], references: [id], onDelete: Cascade)
 
   // Only one reaction per user per post or comment
   @@unique([userId, postId])
@@ -272,152 +284,149 @@ model Reaction {
 }
 
 model Report {
-  IdReport       String       @id @default(cuid()) @map("id_report")
-  IdUser         String       @map("id_user")
-  IdPost         String?      @map("id_post")
-  IdComment      String?      @map("id_comment")
-  Reason         String       @map("reason") @db.VarChar(200)
-  ReportAt       DateTime     @map("report_at") @default(now()) @db.Timestamptz(6)
-  Status         ReportStatus @map("status") @default(PENDING)
-  ActionTaken    String?      @map("action_taken") @db.VarChar(200)
-  ResolvedByIdUser String?      @map("resolved_by_id_user")
-  ResolvedAt     DateTime?    @map("resolved_at") @db.Timestamptz(6)
+  idReport         String       @id @default(cuid()) @map("id_report")
+  idUser           String       @map("id_user")
+  idPost           String?      @map("id_post")
+  idComment        String?      @map("id_comment")
+  reason           String       @map("reason") @db.VarChar(200)
+  reportAt         DateTime     @map("report_at") @default(now()) @db.Timestamptz(6)
+  status           ReportStatus @map("status") @default(PENDING)
+  actionTaken      String?      @map("action_taken") @db.VarChar(200)
+  resolvedByIdUser String?      @map("resolved_by_id_user")
+  resolvedAt       DateTime?    @map("resolved_at") @db.Timestamptz(6)
 
-  ReportedBy     User?        @relation("ReportedBy", fields: [IdUser], references: [id], onDelete: Cascade)
-  Post           Post?        @relation(fields: [IdPost], references: [id], onDelete: Cascade)
-  Comment        Comment?     @relation(fields: [IdComment], references: [id], onDelete: Cascade)
-  ResolvedBy     User?        @relation("ResolvedBy", fields: [ResolvedByIdUser], references: [id])
+  reportedBy       User?        @relation("reportedBy", fields: [idUser], references: [id], onDelete: Cascade)
+  post             Post?        @relation(fields: [idPost], references: [id], onDelete: Cascade)
+  comment          Comment?     @relation(fields: [idComment], references: [id], onDelete: Cascade)
+  resolvedBy       User?        @relation("resolvedBy", fields: [resolvedByIdUser], references: [id])
 
-  // Note: For mutually exclusive `IdPost` OR `IdComment`, you'll need a DB-level CHECK constraint
-  // (e.g., in SQL migration: CHECK (("id_post" IS NOT NULL AND "id_comment" IS NULL) OR ("id_post" IS NULL AND "id_comment" IS NOT NULL)))
-  @@index([IdUser])
-  @@index([Status])
-  @@index([ReportAt])
+  @@index([idUser])
+  @@index([status])
+  @@index([reportAt])
   @@map("reports")
 }
 
-// New Model for Notification
 model Notification {
-  IdNotification     String                 @id @default(cuid()) @map("id_notification")
-  IdUser             String                 @map("id_user") // Người nhận thông báo
-  Type               NotificationType       @map("type")
-  Content            String                 @map("content") @db.VarChar(500) // Nội dung thông báo
-  RelatedEntityId    String?                @map("related_entity_id") // ID của thực thể liên quan (Post, Comment, User, v.v.)
-  RelatedEntityType  NotificationEntityType? @map("related_entity_type") // Loại thực thể liên quan
-  TriggeredByIdUser  String?                @map("triggered_by_id_user") // Người thực hiện hành động (nếu có)
-  IsRead             Boolean                @map("is_read") @default(false) // Trạng thái đã đọc/chưa đọc
-  CreatedAt          DateTime               @map("created_at") @default(now()) @db.Timestamptz(6)
+  idNotification     String                  @id @default(cuid()) @map("id_notification")
+  idUser             String                  @map("id_user")
+  type               NotificationType        @map("type")
+  content            String                  @map("content") @db.VarChar(500)
+  relatedEntityId    String?                 @map("related_entity_id")
+  relatedEntityType  NotificationEntityType? @map("related_entity_type")
+  triggeredByIdUser  String?                 @map("triggered_by_id_user")
+  isRead             Boolean                 @map("is_read") @default(false)
+  createdAt          DateTime                @map("created_at") @default(now()) @db.Timestamptz(6)
 
   // Relations
-  User               User                   @relation("NotificationRecipient", fields: [IdUser], references: [id], onDelete: Cascade)
-  TriggeredByUser    User?                  @relation("NotificationTrigger", fields: [TriggeredByIdUser], references: [id])
+  user               User                    @relation("notificationRecipient", fields: [idUser], references: [id], onDelete: Cascade)
+  triggeredByUser    User?                   @relation("notificationTrigger", fields: [triggeredByIdUser], references: [id])
 
-  @@index([IdUser])
-  @@index([Type])
-  @@index([IsRead])
-  @@index([CreatedAt])
+  @@index([idUser])
+  @@index([type])
+  @@index([isRead])
+  @@index([createdAt])
   @@map("notifications")
 }
 
 model Message {
-  IdMessage          String    @id @default(cuid()) @map("id_message")
-  IdSender           String    @map("id_sender")
-  IdReceiver         String    @map("id_receiver")
-  Content            String?   @map("content") @db.Text // Content can be null if only attachments
-  SentAt             DateTime  @map("sent_at") @default(now()) @db.Timestamptz(6)
-  ReadAt             DateTime? @map("read_at") @db.Timestamptz(6)
-  IsDeletedBySender  Boolean   @map("is_deleted_by_sender") @default(false)
-  IsDeletedByReceiver Boolean   @map("is_deleted_by_receiver") @default(false)
+  idMessage           String    @id @default(cuid()) @map("id_message")
+  idSender            String    @map("id_sender")
+  idReceiver          String    @map("id_receiver")
+  content             String?   @map("content") @db.Text
+  sentAt              DateTime  @map("sent_at") @default(now()) @db.Timestamptz(6)
+  readAt              DateTime? @map("read_at") @db.Timestamptz(6)
+  isDeletedBySender   Boolean   @map("is_deleted_by_sender") @default(false)
+  isDeletedByReceiver Boolean   @map("is_deleted_by_receiver") @default(false)
 
   // Relations
-  Sender             User      @relation("MessageSender", fields: [IdSender], references: [id], onDelete: Cascade)
-  Receiver           User      @relation("MessageReceiver", fields: [IdReceiver], references: [id], onDelete: Cascade)
-  Attachments        Attachment[]
+  sender              User      @relation("messageSender", fields: [idSender], references: [id], onDelete: Cascade)
+  receiver            User      @relation("messageReceiver", fields: [idReceiver], references: [id], onDelete: Cascade)
+  attachments         Attachment[]
 
-  @@index([IdSender, IdReceiver])
-  @@index([SentAt])
+  @@index([idSender, idReceiver])
+  @@index([sentAt])
   @@map("messages")
 }
 
 model Attachment {
-  IdAttachment String   @id @default(cuid()) @map("id_attachment")
-  IdMessage    String   @map("id_message") // Corrected map name
-  FileUrl      String   @map("file_url") @db.VarChar(500)
-  FileName     String   @map("file_name") @db.VarChar(255)
-  FileType     String   @map("file_type") @db.VarChar(50)
-  FileSize     Int      @map("file_size")
-  UploadedAt   DateTime @map("uploaded_at") @default(now()) @db.Timestamptz(6)
-  ThumbnailUrl String?  @map("thumbnail_url") @db.VarChar(500)
+  idAttachment String   @id @default(cuid()) @map("id_attachment")
+  idMessage    String   @map("id_message")
+  fileUrl      String   @map("file_url") @db.VarChar(500)
+  fileName     String   @map("file_name") @db.VarChar(255)
+  fileType     String   @map("file_type") @db.VarChar(50)
+  fileSize     Int      @map("file_size")
+  uploadedAt   DateTime @map("uploaded_at") @default(now()) @db.Timestamptz(6)
+  thumbnailUrl String?  @map("thumbnail_url") @db.VarChar(500)
 
   // Relations
-  Message      Message  @relation(fields: [IdMessage], references: [IdMessage], onDelete: Cascade)
+  message      Message  @relation(fields: [idMessage], references: [idMessage], onDelete: Cascade)
 
-  @@index([IdMessage])
+  @@index([idMessage])
   @@map("attachments")
 }
 
 model Topic {
-  IdTopic       String   @id @default(cuid()) @map("id_topic")
-  Name          String   @unique @map("name") @db.VarChar(100)
-  Description   String?  @map("description") @db.VarChar(500)
-  CreatedAt     DateTime @map("created_at") @default(now()) @db.Timestamptz(6)
-  IdUserCreated String   @map("id_user_created")
+  idTopic       String   @id @default(cuid()) @map("id_topic")
+  name          String   @unique @map("name") @db.VarChar(100)
+  description   String?  @map("description") @db.VarChar(500)
+  createdAt     DateTime @map("created_at") @default(now()) @db.Timestamptz(6)
+  idUserCreated String   @map("id_user_created")
 
   // Relations
-  Creator       User     @relation(fields: [IdUserCreated], references: [id], onDelete: Cascade)
-  TopicTags     TopicTag[]
+  creator       User     @relation(fields: [idUserCreated], references: [id], onDelete: Cascade)
+  topicTags     TopicTag[]
 
-  @@index([Name])
+  @@index([name])
   @@map("topics")
 }
 
 model Tag {
-  IdTag         String   @id @default(cuid()) @map("id_tag")
-  Name          String   @unique @map("name") @db.VarChar(50)
-  Description   String?  @map("description") @db.VarChar(255)
-  CreatedAt     DateTime @map("created_at") @default(now()) @db.Timestamptz(6)
-  IdUserCreated String   @map("id_user_created")
+  idTag         String   @id @default(cuid()) @map("id_tag")
+  name          String   @unique @map("name") @db.VarChar(50)
+  description   String?  @map("description") @db.VarChar(255)
+  createdAt     DateTime @map("created_at") @default(now()) @db.Timestamptz(6)
+  idUserCreated String   @map("id_user_created")
 
   // Relations
-  Creator       User     @relation(fields: [IdUserCreated], references: [id], onDelete: Cascade)
-  PostTags      PostTag[]
-  TopicTags     TopicTag[]
+  creator       User     @relation(fields: [idUserCreated], references: [id], onDelete: Cascade)
+  postTags      PostTag[]
+  topicTags     TopicTag[]
 
-  @@index([Name])
+  @@index([name])
   @@map("tags")
 }
 
 model PostTag {
-  IdPost String @map("id_post")
-  IdTag  String @map("id_tag")
+  idPost String @map("id_post")
+  idTag  String @map("id_tag")
 
-  Post   Post   @relation(fields: [IdPost], references: [id], onDelete: Cascade)
-  Tag    Tag    @relation(fields: [IdTag], references: [IdTag], onDelete: Cascade)
+  post   Post   @relation(fields: [idPost], references: [id], onDelete: Cascade)
+  tag    Tag    @relation(fields: [idTag], references: [idTag], onDelete: Cascade)
 
-  @@id([IdPost, IdTag])
+  @@id([idPost, idTag])
   @@map("post_tags")
 }
 
 model TopicTag {
-  IdTopic String @map("id_topic")
-  IdTag   String @map("id_tag")
+  idTopic String @map("id_topic")
+  idTag   String @map("id_tag")
 
-  Topic   Topic  @relation(fields: [IdTopic], references: [IdTopic], onDelete: Cascade)
-  Tag     Tag    @relation(fields: [IdTag], references: [IdTag], onDelete: Cascade)
+  topic   Topic  @relation(fields: [idTopic], references: [idTopic], onDelete: Cascade)
+  tag     Tag    @relation(fields: [idTag], references: [idTag], onDelete: Cascade)
 
-  @@id([IdTopic, IdTag])
+  @@id([idTopic, idTag])
   @@map("topic_tags")
 }
 
 model BadWord {
-  IdBadWord   String   @id @default(cuid()) @map("id_bad_word")
-  Word        String   @unique @map("word") @db.VarChar(100)
-  AddedBy     String   @map("added_by")
-  CreatedAt   DateTime @map("created_at") @default(now()) @db.Timestamptz(6)
+  idBadWord   String   @id @default(cuid()) @map("id_bad_word")
+  word        String   @unique @map("word") @db.VarChar(100)
+  addedBy     String   @map("added_by")
+  createdAt   DateTime @map("created_at") @default(now()) @db.Timestamptz(6)
 
-  AddedByUser User     @relation(fields: [AddedBy], references: [id], onDelete: Cascade)
+  addedByUser User     @relation(fields: [addedBy], references: [id], onDelete: Cascade)
 
-  @@index([Word])
+  @@index([word])
   @@map("bad_words")
 }
 
