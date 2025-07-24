@@ -6,7 +6,6 @@
 
 generator client {
   provider = "prisma-client-js"
-  output   = "../src/generated/prisma"
 }
 
 datasource db {
@@ -14,499 +13,455 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// Enums
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+
+  @@map("gender")
+}
+
+enum PostType {
+  DISCUSSION
+  QUESTION
+  NEWS
+  TUTORIAL
+
+  @@map("post_type")
+}
+
+enum PostStatus {
+  DRAFT
+  ACTIVE
+  HIDDEN
+  DELETED
+
+  @@map("post_status")
+}
+
+enum CommentStatus {
+  ACTIVE
+  HIDDEN
+  DELETED
+
+  @@map("comment_status")
+}
+
+enum ReactionType {
+  LIKE
+  DISLIKE
+  LOVE
+  LAUGH
+
+  @@map("reaction_type")
+}
+
+enum ReportStatus {
+  PENDING
+  RESOLVED
+  DISMISSED
+
+  @@map("report_status")
+}
+
+enum ExperienceLevel {
+  FRESHER
+  JUNIOR
+  MIDDLE
+  SENIOR
+  LEAD
+  PRINCIPAL
+  MANAGER
+  DIRECTOR
+}
+
+enum NotificationType {
+  NEW_COMMENT_ON_POST
+  NEW_REACTION_ON_POST
+  NEW_REACTION_ON_COMMENT
+  NEW_FOLLOW
+  POST_MENTION
+  COMMENT_MENTION
+  REPORT_STATUS_UPDATE
+  ADMIN_MESSAGE
+}
+
+enum NotificationEntityType {
+  POST
+  COMMENT
+  USER
+  REPORT
+  MESSAGE
+}
+
+// Models
 model User {
-  idUser            Int           @id @default(autoincrement())
-  Username          String        @unique
-  Password          String
-  Email             String        @unique
-  FirstName         String?
-  LastName          String?
-  Gender            String?
-  Avatar            String?
-  DayOfBirth        DateTime?
-  Bio               String?
-  Occupation        String?
-  Experience        String?
-  ProfileVisibility Boolean       @default(true)
-  is_banned         Boolean       @default(false)
-  CreatedAt         DateTime      @default(now())
-  
+  id                Int         @id @default(autoincrement())
+  username          String      @unique @db.VarChar(50)
+  password          String      @db.VarChar(255)
+  email             String      @unique @db.VarChar(255)
+  firstName         String?     @db.VarChar(50)
+  lastName          String?     @db.VarChar(50)
+  gender            Gender?
+  avatar            String?     @db.VarChar(500)
+  dateOfBirth       DateTime?   @db.Date
+  regionId          Int?
+  region            Region?     @relation(fields: [regionId], references: [id])
+  majorId           Int?
+  major             Major?      @relation(fields: [majorId], references: [id])
+  bio               String?     @db.VarChar(500)
+  occupation        String?     @db.VarChar(100)
+  experience        ExperienceLevel?
+  profileVisibility Boolean     @default(true)
+  isBanned          Boolean     @default(false)
+  createdAt         DateTime    @default(now()) @db.Timestamptz(6)
+  lastLoginAt       DateTime?   @db.Timestamptz(6)
+
   // Relations
-  userRoles         UserRole[]
-  userSkills        UserSkill[]
-  followers         Follow[]      @relation("UserFollowing")
-  following         Follow[]      @relation("UserFollower")
-  posts             Post[]
-  comments          Comment[]
-  reactions         Reaction[]
-  reportedBy        Report[]      @relation("ReportedBy")
-  messagesSent      Message[]     @relation("MessageSender")
-  messagesReceived  Message[]     @relation("MessageReceiver")
-  topicsCreated     Topic[]
-  tagsCreated       Tag[]
-  badWordsAdded     BadWord[]
-  moderatedPosts    Post[]        @relation("ModeratedBy")
-  resolvedReports   Report[]      @relation("ResolvedBy")
+  roles                 UserRole[]
+  skills                UserSkill[]
+  followers             Follow[]         @relation("userFollowing")
+  following             Follow[]         @relation("userFollower")
+  posts                 Post[]
+  comments              Comment[]
+  reactions             Reaction[]
+  reportsMade           Report[]         @relation("reportedBy")
+  messagesSent          Message[]        @relation("messageSender")
+  messagesReceived      Message[]        @relation("messageReceiver")
+  topicsCreated         Topic[]
+  tagsCreated           Tag[]
+  badWordsAdded         BadWord[]
+  moderatedPosts        Post[]           @relation("moderatedBy")
+  resolvedReports       Report[]         @relation("resolvedBy")
+  notifications         Notification[]   @relation("notificationRecipient")
+  notificationsTriggered Notification[]  @relation("notificationTrigger")
+
+  @@index([email])
+  @@index([username])
+  @@index([createdAt])
+  @@map("users")
 }
 
 model Role {
-  idRole   Int        @id @default(autoincrement())
-  NameRole String     @unique
-  
+  id                  Int  @id @default(autoincrement())
+  name                String  @unique @db.VarChar(50)
+  managePost          Boolean @default(false)
+  manageUser          Boolean @default(false)
+  canCreateNews       Boolean @default(false)
+  canViewReports      Boolean @default(false)
+  canManageTopicsTags Boolean @default(false)
+
   // Relations
-  userRoles   UserRole[]
-  roleClaims  RoleClaim[]
-<<<<<<< HEAD
+  users               UserRole[]
+
+  @@map("roles")
 }
 
 model RoleClaim {
-  idRole             Int     @id
-  managepost         Boolean @default(false)
-  manageUser         Boolean @default(false)
-  can_create_news    Boolean @default(false)
-  can_view_reports   Boolean @default(false)
-  can_manage_topics_tags Boolean @default(false)
-  
-  // Relations
-  role Role @relation(fields: [idRole], references: [idRole], onDelete: Cascade)
+  id      Int    @id @default(autoincrement())
+  roleId  Int
+  claim   String
+
+  role    Role   @relation(fields: [roleId], references: [id])
+
+  @@unique([roleId, claim])
 }
 
 model UserRole {
-  IdRole Int
-  IdUser Int
-  
-  // Relations
-  role Role @relation(fields: [IdRole], references: [idRole], onDelete: Cascade)
-  user User @relation(fields: [IdUser], references: [idUser], onDelete: Cascade)
-  
-  @@id([IdRole, IdUser])
-}
+  roleId Int
+  userId Int
 
-model Skill {
-  idSkill     Int    @id @default(autoincrement())
-  Name        String @unique
-  Description String?
-  
   // Relations
-  userSkills UserSkill[]
+  role   Role   @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, userId])
+  @@map("user_roles")
 }
 
 model UserSkill {
-  idUser            Int
-  idSkill           Int
-  levelskill        String?
-  YearsOfExperience Int?
-  
+  userId            Int
+  skillId           Int
+  level             ExperienceLevel
+  yearsOfExperience Int?            @db.SmallInt
+
   // Relations
-  user  User  @relation(fields: [idUser], references: [idUser], onDelete: Cascade)
-  skill Skill @relation(fields: [idSkill], references: [idSkill], onDelete: Cascade)
-  
-  @@id([idUser, idSkill])
+  user              User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  skill             Skill           @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@id([userId, skillId])
+  @@map("user_skills")
 }
 
 model Follow {
-  idFollower  Int
-  idFollowing Int
-  FollowedAt  DateTime @default(now())
-  
+  followerId  Int
+  followingId Int
+  followedAt  DateTime @default(now()) @db.Timestamptz(6)
+
   // Relations
-  follower  User @relation("UserFollower", fields: [idFollower], references: [idUser], onDelete: Cascade)
-  following User @relation("UserFollowing", fields: [idFollowing], references: [idUser], onDelete: Cascade)
-  
-  @@id([idFollower, idFollowing])
+  follower    User     @relation("userFollower", fields: [followerId], references: [id], onDelete: Cascade)
+  following   User     @relation("userFollowing", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@id([followerId, followingId])
+  @@map("follows")
+}
+
+model Major {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique @db.VarChar(100)
+  description String?  @db.VarChar(255)
+  users       User[]
+  createdAt   DateTime @default(now()) @db.Timestamptz(6)
+
+  @@map("majors")
 }
 
 model Post {
-  idPost                Int       @id @default(autoincrement())
-  idUser                Int
-  Title                 String
-  Content               String
-  PostType              String
-  SourceURL             String?
-  OriginalAuthor        String?
-  OriginalPublishedDate DateTime?
-  CreatedAt             DateTime  @default(now())
-  UpdatedAt             DateTime  @updatedAt
-  Status                String    @default("active")
-  viewcount             Int       @default(0)
-  moderated_by          Int?
-  moderated_at          DateTime?
-  WordCount             Int?
-  
+  id                    Int        @id @default(autoincrement())
+  userId                Int
+  title                 String     @db.VarChar(300)
+  content               String     @db.Text
+  postType              PostType
+  sourceUrl             String?    @db.VarChar(500)
+  originalAuthor        String?    @db.VarChar(100)
+  originalPublishedDate DateTime?  @db.Timestamptz(6)
+  createdAt             DateTime   @default(now()) @db.Timestamptz(6)
+  updatedAt             DateTime   @updatedAt @db.Timestamptz(6)
+  status                PostStatus @default(ACTIVE)
+  viewCount             Int        @default(0)
+  moderatedById         Int?
+  moderatedAt           DateTime?  @db.Timestamptz(6)
+  wordCount             Int?
+  isDeleted             Boolean    @default(false)
+  deletedAt             DateTime?  @db.Timestamptz(6)
+
   // Relations
-  user       User       @relation(fields: [idUser], references: [idUser], onDelete: Cascade)
-  moderator  User?      @relation("ModeratedBy", fields: [moderated_by], references: [idUser])
-  comments   Comment[]
-  reactions  Reaction[]
-  reports    Report[]
-  postTags   PostTag[]
+  user                  User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  moderator             User?      @relation("moderatedBy", fields: [moderatedById], references: [id])
+  comments              Comment[]
+  reactions             Reaction[]
+  reports               Report[]
+  postTags              PostTag[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([postType])
+  @@index([createdAt])
+  @@index([viewCount])
+  @@map("posts")
 }
 
 model Comment {
-  idComment       Int       @id @default(autoincrement())
-  idPost          Int
-  idUser          Int
-  Content         String
-  CreatedAt       DateTime  @default(now())
-  UpdatedAt       DateTime  @updatedAt
-  ParentCommentId Int?
-  IsDeleted       Boolean   @default(false)
-  Status          String    @default("active")
-  
+  id              Int           @id @default(autoincrement())
+  postId          Int
+  userId          Int
+  content         String        @db.Text
+  createdAt       DateTime      @default(now()) @db.Timestamptz(6)
+  updatedAt       DateTime      @updatedAt @db.Timestamptz(6)
+  parentCommentId Int?
+  isDeleted       Boolean       @default(false)
+  status          CommentStatus @default(ACTIVE)
+
   // Relations
-  post          Post       @relation(fields: [idPost], references: [idPost], onDelete: Cascade)
-  user          User       @relation(fields: [idUser], references: [idUser], onDelete: Cascade)
-  parentComment Comment?   @relation("CommentReplies", fields: [ParentCommentId], references: [idComment])
-  replies       Comment[]  @relation("CommentReplies")
-  reactions     Reaction[]
-  reports       Report[]
+  post            Post?         @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parentComment   Comment?      @relation("commentReplies", fields: [parentCommentId], references: [id])
+  replies         Comment[]     @relation("commentReplies")
+  reactions       Reaction[]
+  reports         Report[]
+
+  @@index([postId])
+  @@index([userId])
+  @@index([parentCommentId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("comments")
 }
 
 model Reaction {
-  idReaction   Int      @id @default(autoincrement())
-  idUser       Int
-  idPost       Int?
-  idComment    Int?
-  ReactionType String
-  CreatedAt    DateTime @default(now())
-  
+  id           Int          @id @default(autoincrement())
+  userId       Int
+  postId       Int?
+  commentId    Int?
+  reactionType ReactionType
+  createdAt    DateTime     @default(now()) @db.Timestamptz(6)
+
   // Relations
-  user    User     @relation(fields: [idUser], references: [idUser], onDelete: Cascade)
-  post    Post?    @relation(fields: [idPost], references: [idPost], onDelete: Cascade)
-  comment Comment? @relation(fields: [idComment], references: [idComment], onDelete: Cascade)
-  
-  @@unique([idUser, idPost, idComment])
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post         Post?        @relation(fields: [postId], references: [id], onDelete: Cascade)
+  comment      Comment?     @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  // Only one reaction per user per post or comment
+  @@unique([userId, postId])
+  @@unique([userId, commentId])
+  @@map("reactions")
 }
 
 model Report {
-  idReport         Int      @id @default(autoincrement())
-  idUser           Int
-  idPost           Int?
-  idComment        Int?
-  Reason           String
-  ReportAt         DateTime @default(now())
-  Status           String   @default("pending")
-  ActionTaken      String?
-  ResolvedByIdUser Int?
-  Resolved_at      DateTime?
-  
+  idReport         Int          @id @default(autoincrement()) @map("id_report")
+  idUser           Int          @map("id_user")
+  idPost           Int?         @map("id_post")
+  idComment        Int?         @map("id_comment")
+  reason           String       @map("reason") @db.VarChar(200)
+  reportAt         DateTime     @map("report_at") @default(now()) @db.Timestamptz(6)
+  status           ReportStatus @map("status") @default(PENDING)
+  actionTaken      String?      @map("action_taken") @db.VarChar(200)
+  resolvedByIdUser Int?         @map("resolved_by_id_user")
+  resolvedAt       DateTime?    @map("resolved_at") @db.Timestamptz(6)
+
+  reportedBy       User?        @relation("reportedBy", fields: [idUser], references: [id], onDelete: Cascade)
+  post             Post?        @relation(fields: [idPost], references: [id], onDelete: Cascade)
+  comment          Comment?     @relation(fields: [idComment], references: [id], onDelete: Cascade)
+  resolvedBy       User?        @relation("resolvedBy", fields: [resolvedByIdUser], references: [id])
+
+  @@index([idUser])
+  @@index([status])
+  @@index([reportAt])
+  @@map("reports")
+}
+
+model Notification {
+  idNotification     Int                     @id @default(autoincrement()) @map("id_notification")
+  idUser             Int                     @map("id_user")
+  type               NotificationType        @map("type")
+  content            String                  @map("content") @db.VarChar(500)
+  relatedEntityId    Int?                    @map("related_entity_id")
+  relatedEntityType  NotificationEntityType? @map("related_entity_type")
+  triggeredByIdUser  Int?                    @map("triggered_by_id_user")
+  isRead             Boolean                 @map("is_read") @default(false)
+  createdAt          DateTime                @map("created_at") @default(now()) @db.Timestamptz(6)
+
   // Relations
-  reportedBy User     @relation("ReportedBy", fields: [idUser], references: [idUser], onDelete: Cascade)
-  post       Post?    @relation(fields: [idPost], references: [idPost], onDelete: Cascade)
-  comment    Comment? @relation(fields: [idComment], references: [idComment], onDelete: Cascade)
-  resolvedBy User?    @relation("ResolvedBy", fields: [ResolvedByIdUser], references: [idUser])
+  user               User                    @relation("notificationRecipient", fields: [idUser], references: [id], onDelete: Cascade)
+  triggeredByUser    User?                   @relation("notificationTrigger", fields: [triggeredByIdUser], references: [id])
+
+  @@index([idUser])
+  @@index([type])
+  @@index([isRead])
+  @@index([createdAt])
+  @@map("notifications")
 }
 
 model Message {
-  idMessage           Int      @id @default(autoincrement())
-  idSender            Int
-  idReceiver          Int
-  Content             String
-  SentAt              DateTime @default(now())
-  ReadAt              DateTime?
-  IsDeletedBySender   Boolean  @default(false)
-  IsDeletedByReceiver Boolean  @default(false)
-  
+  idMessage           Int       @id @default(autoincrement()) @map("id_message")
+  idSender            Int       @map("id_sender")
+  idReceiver          Int       @map("id_receiver")
+  content             String?   @map("content") @db.Text
+  sentAt              DateTime  @map("sent_at") @default(now()) @db.Timestamptz(6)
+  readAt              DateTime? @map("read_at") @db.Timestamptz(6)
+  isDeletedBySender   Boolean   @map("is_deleted_by_sender") @default(false)
+  isDeletedByReceiver Boolean   @map("is_deleted_by_receiver") @default(false)
+
   // Relations
-  sender      User         @relation("MessageSender", fields: [idSender], references: [idUser], onDelete: Cascade)
-  receiver    User         @relation("MessageReceiver", fields: [idReceiver], references: [idUser], onDelete: Cascade)
-  attachments Attachment[]
+  sender              User      @relation("messageSender", fields: [idSender], references: [id], onDelete: Cascade)
+  receiver            User      @relation("messageReceiver", fields: [idReceiver], references: [id], onDelete: Cascade)
+  attachments         Attachment[]
+
+  @@index([idSender, idReceiver])
+  @@index([sentAt])
+  @@map("messages")
 }
 
 model Attachment {
-  idAttachment Int      @id @default(autoincrement())
-  IdMessage    Int
-  FileURL      String
-  FileName     String
-  FileType     String
-  FileSize     Int
-  UploadedAt   DateTime @default(now())
-  ThumbnailURL String?
-  
+  idAttachment Int      @id @default(autoincrement()) @map("id_attachment")
+  idMessage    Int      @map("id_message")
+  fileUrl      String   @map("file_url") @db.VarChar(500)
+  fileName     String   @map("file_name") @db.VarChar(255)
+  fileType     String   @map("file_type") @db.VarChar(50)
+  fileSize     Int      @map("file_size")
+  uploadedAt   DateTime @map("uploaded_at") @default(now()) @db.Timestamptz(6)
+  thumbnailUrl String?  @map("thumbnail_url") @db.VarChar(500)
+
   // Relations
-  message Message @relation(fields: [IdMessage], references: [idMessage], onDelete: Cascade)
+  message      Message  @relation(fields: [idMessage], references: [idMessage], onDelete: Cascade)
+
+  @@index([idMessage])
+  @@map("attachments")
 }
 
 model Topic {
-  idTopic        Int    @id @default(autoincrement())
-  Name           String @unique
-  Description    String?
-  createdAt      DateTime @default(now())
-  IdUserCreated  Int
-  
+  idTopic       Int      @id @default(autoincrement()) @map("id_topic")
+  name          String   @unique @map("name") @db.VarChar(100)
+  description   String?  @map("description") @db.VarChar(500)
+  createdAt     DateTime @map("created_at") @default(now()) @db.Timestamptz(6)
+  idUserCreated Int      @map("id_user_created")
+
   // Relations
-  creator    User        @relation(fields: [IdUserCreated], references: [idUser], onDelete: Cascade)
-  topicTags  TopicTag[]
+  creator       User     @relation(fields: [idUserCreated], references: [id], onDelete: Cascade)
+  topicTags     TopicTag[]
+
+  @@index([name])
+  @@map("topics")
 }
 
 model Tag {
-  idTag         Int    @id @default(autoincrement())
-  Name          String @unique
-  Description   String?
-  CreatedAt     DateTime @default(now())
-  IdUserCreated Int
-  
+  idTag         Int      @id @default(autoincrement()) @map("id_tag")
+  name          String   @unique @map("name") @db.VarChar(50)
+  description   String?  @map("description") @db.VarChar(255)
+  createdAt     DateTime @map("created_at") @default(now()) @db.Timestamptz(6)
+  idUserCreated Int      @map("id_user_created")
+
   // Relations
-  creator   User       @relation(fields: [IdUserCreated], references: [idUser], onDelete: Cascade)
-  postTags  PostTag[]
-  topicTags TopicTag[]
+  creator       User     @relation(fields: [idUserCreated], references: [id], onDelete: Cascade)
+  postTags      PostTag[]
+  topicTags     TopicTag[]
+
+  @@index([name])
+  @@map("tags")
 }
 
 model PostTag {
-  idPost Int
-  idTag  Int
-  
-  // Relations
-  post Post @relation(fields: [idPost], references: [idPost], onDelete: Cascade)
-  tag  Tag  @relation(fields: [idTag], references: [idTag], onDelete: Cascade)
-  
+  idPost Int @map("id_post")
+  idTag  Int @map("id_tag")
+
+  post   Post   @relation(fields: [idPost], references: [id], onDelete: Cascade)
+  tag    Tag    @relation(fields: [idTag], references: [idTag], onDelete: Cascade)
+
   @@id([idPost, idTag])
+  @@map("post_tags")
 }
 
 model TopicTag {
-  idTopic Int
-  idTag   Int
-  
-  // Relations
-  topic Topic @relation(fields: [idTopic], references: [idTopic], onDelete: Cascade)
-  tag   Tag   @relation(fields: [idTag], references: [idTag], onDelete: Cascade)
-  
+  idTopic Int @map("id_topic")
+  idTag   Int @map("id_tag")
+
+  topic   Topic  @relation(fields: [idTopic], references: [idTopic], onDelete: Cascade)
+  tag     Tag    @relation(fields: [idTag], references: [idTag], onDelete: Cascade)
+
   @@id([idTopic, idTag])
+  @@map("topic_tags")
 }
 
 model BadWord {
-  idBadWord Int      @id @default(autoincrement())
-  Word      String   @unique
-  AddedBy   Int
-  CreatedAt DateTime @default(now())
-  
-  // Relations
-  addedByUser User @relation(fields: [AddedBy], references: [idUser], onDelete: Cascade)
-=======
->>>>>>> 52c31b1 ([Update] Base)
+  idBadWord   Int      @id @default(autoincrement()) @map("id_bad_word")
+  word        String   @unique @map("word") @db.VarChar(100)
+  addedBy     Int      @map("added_by")
+  createdAt   DateTime @map("created_at") @default(now()) @db.Timestamptz(6)
+
+  addedByUser User     @relation(fields: [addedBy], references: [id], onDelete: Cascade)
+
+  @@index([word])
+  @@map("bad_words")
 }
 
-model RoleClaim {
-  idRole             Int     @id
-  managepost         Boolean @default(false)
-  manageUser         Boolean @default(false)
-  can_create_news    Boolean @default(false)
-  can_view_reports   Boolean @default(false)
-  can_manage_topics_tags Boolean @default(false)
-  
-  // Relations
-  role Role @relation(fields: [idRole], references: [idRole], onDelete: Cascade)
-}
+model Region {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique @db.VarChar(100)
+  description String?  @db.VarChar(255)
+  users       User[]
+  createdAt   DateTime @default(now()) @db.Timestamptz(6)
 
-model UserRole {
-  IdRole Int
-  IdUser Int
-  
-  // Relations
-  role Role @relation(fields: [IdRole], references: [idRole], onDelete: Cascade)
-  user User @relation(fields: [IdUser], references: [idUser], onDelete: Cascade)
-  
-  @@id([IdRole, IdUser])
+  @@map("regions")
 }
 
 model Skill {
-  idSkill     Int    @id @default(autoincrement())
-  Name        String @unique
-  Description String?
-  
-  // Relations
-  userSkills UserSkill[]
-}
+  id          Int         @id @default(autoincrement())
+  name        String      @unique @db.VarChar(100)
+  description String?     @db.VarChar(500)
+  users       UserSkill[]
+  createdAt   DateTime    @default(now()) @db.Timestamptz(6)
 
-model UserSkill {
-  idUser            Int
-  idSkill           Int
-  levelskill        String?
-  YearsOfExperience Int?
-  
-  // Relations
-  user  User  @relation(fields: [idUser], references: [idUser], onDelete: Cascade)
-  skill Skill @relation(fields: [idSkill], references: [idSkill], onDelete: Cascade)
-  
-  @@id([idUser, idSkill])
-}
-
-model Follow {
-  idFollower  Int
-  idFollowing Int
-  FollowedAt  DateTime @default(now())
-  
-  // Relations
-  follower  User @relation("UserFollower", fields: [idFollower], references: [idUser], onDelete: Cascade)
-  following User @relation("UserFollowing", fields: [idFollowing], references: [idUser], onDelete: Cascade)
-  
-  @@id([idFollower, idFollowing])
-}
-
-model Post {
-  idPost                Int       @id @default(autoincrement())
-  idUser                Int
-  Title                 String
-  Content               String
-  PostType              String
-  SourceURL             String?
-  OriginalAuthor        String?
-  OriginalPublishedDate DateTime?
-  CreatedAt             DateTime  @default(now())
-  UpdatedAt             DateTime  @updatedAt
-  Status                String    @default("active")
-  viewcount             Int       @default(0)
-  moderated_by          Int?
-  moderated_at          DateTime?
-  WordCount             Int?
-  
-  // Relations
-  user       User       @relation(fields: [idUser], references: [idUser], onDelete: Cascade)
-  moderator  User?      @relation("ModeratedBy", fields: [moderated_by], references: [idUser])
-  comments   Comment[]
-  reactions  Reaction[]
-  reports    Report[]
-  postTags   PostTag[]
-}
-
-model Comment {
-  idComment       Int       @id @default(autoincrement())
-  idPost          Int
-  idUser          Int
-  Content         String
-  CreatedAt       DateTime  @default(now())
-  UpdatedAt       DateTime  @updatedAt
-  ParentCommentId Int?
-  IsDeleted       Boolean   @default(false)
-  Status          String    @default("active")
-  
-  // Relations
-  post          Post       @relation(fields: [idPost], references: [idPost], onDelete: Cascade)
-  user          User       @relation(fields: [idUser], references: [idUser], onDelete: Cascade)
-  parentComment Comment?   @relation("CommentReplies", fields: [ParentCommentId], references: [idComment])
-  replies       Comment[]  @relation("CommentReplies")
-  reactions     Reaction[]
-  reports       Report[]
-}
-
-model Reaction {
-  idReaction   Int      @id @default(autoincrement())
-  idUser       Int
-  idPost       Int?
-  idComment    Int?
-  ReactionType String
-  CreatedAt    DateTime @default(now())
-  
-  // Relations
-  user    User     @relation(fields: [idUser], references: [idUser], onDelete: Cascade)
-  post    Post?    @relation(fields: [idPost], references: [idPost], onDelete: Cascade)
-  comment Comment? @relation(fields: [idComment], references: [idComment], onDelete: Cascade)
-  
-  @@unique([idUser, idPost, idComment])
-}
-
-model Report {
-  idReport         Int      @id @default(autoincrement())
-  idUser           Int
-  idPost           Int?
-  idComment        Int?
-  Reason           String
-  ReportAt         DateTime @default(now())
-  Status           String   @default("pending")
-  ActionTaken      String?
-  ResolvedByIdUser Int?
-  Resolved_at      DateTime?
-  
-  // Relations
-  reportedBy User     @relation("ReportedBy", fields: [idUser], references: [idUser], onDelete: Cascade)
-  post       Post?    @relation(fields: [idPost], references: [idPost], onDelete: Cascade)
-  comment    Comment? @relation(fields: [idComment], references: [idComment], onDelete: Cascade)
-  resolvedBy User?    @relation("ResolvedBy", fields: [ResolvedByIdUser], references: [idUser])
-}
-
-model Message {
-  idMessage           Int      @id @default(autoincrement())
-  idSender            Int
-  idReceiver          Int
-  Content             String
-  SentAt              DateTime @default(now())
-  ReadAt              DateTime?
-  IsDeletedBySender   Boolean  @default(false)
-  IsDeletedByReceiver Boolean  @default(false)
-  
-  // Relations
-  sender      User         @relation("MessageSender", fields: [idSender], references: [idUser], onDelete: Cascade)
-  receiver    User         @relation("MessageReceiver", fields: [idReceiver], references: [idUser], onDelete: Cascade)
-  attachments Attachment[]
-}
-
-model Attachment {
-  idAttachment Int      @id @default(autoincrement())
-  IdMessage    Int
-  FileURL      String
-  FileName     String
-  FileType     String
-  FileSize     Int
-  UploadedAt   DateTime @default(now())
-  ThumbnailURL String?
-  
-  // Relations
-  message Message @relation(fields: [IdMessage], references: [idMessage], onDelete: Cascade)
-}
-
-model Topic {
-  idTopic        Int    @id @default(autoincrement())
-  Name           String @unique
-  Description    String?
-  createdAt      DateTime @default(now())
-  IdUserCreated  Int
-  
-  // Relations
-  creator    User        @relation(fields: [IdUserCreated], references: [idUser], onDelete: Cascade)
-  topicTags  TopicTag[]
-}
-
-model Tag {
-  idTag         Int    @id @default(autoincrement())
-  Name          String @unique
-  Description   String?
-  CreatedAt     DateTime @default(now())
-  IdUserCreated Int
-  
-  // Relations
-  creator   User       @relation(fields: [IdUserCreated], references: [idUser], onDelete: Cascade)
-  postTags  PostTag[]
-  topicTags TopicTag[]
-}
-
-model PostTag {
-  idPost Int
-  idTag  Int
-  
-  // Relations
-  post Post @relation(fields: [idPost], references: [idPost], onDelete: Cascade)
-  tag  Tag  @relation(fields: [idTag], references: [idTag], onDelete: Cascade)
-  
-  @@id([idPost, idTag])
-}
-
-model TopicTag {
-  idTopic Int
-  idTag   Int
-  
-  // Relations
-  topic Topic @relation(fields: [idTopic], references: [idTopic], onDelete: Cascade)
-  tag   Tag   @relation(fields: [idTag], references: [idTag], onDelete: Cascade)
-  
-  @@id([idTopic, idTag])
-}
-
-model BadWord {
-  idBadWord Int      @id @default(autoincrement())
-  Word      String   @unique
-  AddedBy   Int
-  CreatedAt DateTime @default(now())
-  
-  // Relations
-  addedByUser User @relation(fields: [AddedBy], references: [idUser], onDelete: Cascade)
+  @@index([name])
+  @@map("skills")
 }

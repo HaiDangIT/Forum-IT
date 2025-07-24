@@ -1,2 +1,29 @@
+# Bỏ qua file cấu hình môi trường
+package.json
+package-lock.json
 
-/src/generated/prisma
+# Chứa thông tin nhạy cảm như mật khẩu, khóa bí mật, v.v.
+.env
+
+# Bỏ qua các file Node
+node_modules/
+
+# Bỏ qua các file log
+logs/
+
+# Bỏ qua các file prisma
+prisma/migrations
+prisma/
+
+# Bỏ qua các file src/generated/prisma
+src/generated/prisma/
+
+# Bỏ qua các file tạm thời
+tmp/
+
+# Bỏ qua file .gitignore
+.gitignore
+
+# Bỏ qua các file trong src
+src/
+
