@@ -91,7 +91,7 @@ enum NotificationEntityType {
 
 // Models
 model User {
-  id                String      @id @default(cuid())
+  id                Int         @id @default(autoincrement())
   username          String      @unique @db.VarChar(50)
   password          String      @db.VarChar(255)
   email             String      @unique @db.VarChar(255)
@@ -100,9 +100,9 @@ model User {
   gender            Gender?
   avatar            String?     @db.VarChar(500)
   dateOfBirth       DateTime?   @db.Date
-  regionId          String?
+  regionId          Int?
   region            Region?     @relation(fields: [regionId], references: [id])
-  majorId           String?
+  majorId           Int?
   major             Major?      @relation(fields: [majorId], references: [id])
   bio               String?     @db.VarChar(500)
   occupation        String?     @db.VarChar(100)
@@ -138,7 +138,7 @@ model User {
 }
 
 model Role {
-  id                  String  @id @default(cuid())
+  id                  Int  @id @default(autoincrement())
   name                String  @unique @db.VarChar(50)
   managePost          Boolean @default(false)
   manageUser          Boolean @default(false)
@@ -153,8 +153,8 @@ model Role {
 }
 
 model UserRole {
-  roleId String
-  userId String
+  roleId Int
+  userId Int
 
   // Relations
   role   Role   @relation(fields: [roleId], references: [id], onDelete: Cascade)
@@ -165,8 +165,8 @@ model UserRole {
 }
 
 model UserSkill {
-  userId            String
-  skillId           String
+  userId            Int
+  skillId           Int
   level             ExperienceLevel
   yearsOfExperience Int?            @db.SmallInt
 
@@ -179,8 +179,8 @@ model UserSkill {
 }
 
 model Follow {
-  followerId  String
-  followingId String
+  followerId  Int
+  followingId Int
   followedAt  DateTime @default(now()) @db.Timestamptz(6)
 
   // Relations
@@ -192,7 +192,7 @@ model Follow {
 }
 
 model Major {
-  id          String   @id @default(cuid())
+  id          Int      @id @default(autoincrement())
   name        String   @unique @db.VarChar(100)
   description String?  @db.VarChar(255)
   users       User[]
@@ -202,8 +202,8 @@ model Major {
 }
 
 model Post {
-  id                    String     @id @default(cuid())
-  userId                String
+  id                    Int        @id @default(autoincrement())
+  userId                Int
   title                 String     @db.VarChar(300)
   content               String     @db.Text
   postType              PostType
@@ -214,7 +214,7 @@ model Post {
   updatedAt             DateTime   @updatedAt @db.Timestamptz(6)
   status                PostStatus @default(ACTIVE)
   viewCount             Int        @default(0)
-  moderatedById         String?
+  moderatedById         Int?
   moderatedAt           DateTime?  @db.Timestamptz(6)
   wordCount             Int?
   isDeleted             Boolean    @default(false)
@@ -237,13 +237,13 @@ model Post {
 }
 
 model Comment {
-  id              String        @id @default(cuid())
-  postId          String
-  userId          String
+  id              Int           @id @default(autoincrement())
+  postId          Int
+  userId          Int
   content         String        @db.Text
   createdAt       DateTime      @default(now()) @db.Timestamptz(6)
   updatedAt       DateTime      @updatedAt @db.Timestamptz(6)
-  parentCommentId String?
+  parentCommentId Int?
   isDeleted       Boolean       @default(false)
   status          CommentStatus @default(ACTIVE)
 
@@ -264,10 +264,10 @@ model Comment {
 }
 
 model Reaction {
-  id           String       @id @default(cuid())
-  userId       String
-  postId       String?
-  commentId    String?
+  id           Int          @id @default(autoincrement())
+  userId       Int
+  postId       Int?
+  commentId    Int?
   reactionType ReactionType
   createdAt    DateTime     @default(now()) @db.Timestamptz(6)
 
@@ -283,15 +283,15 @@ model Reaction {
 }
 
 model Report {
-  idReport         String       @id @default(cuid()) @map("id_report")
-  idUser           String       @map("id_user")
-  idPost           String?      @map("id_post")
-  idComment        String?      @map("id_comment")
+  idReport         Int          @id @default(autoincrement()) @map("id_report")
+  idUser           Int          @map("id_user")
+  idPost           Int?         @map("id_post")
+  idComment        Int?         @map("id_comment")
   reason           String       @map("reason") @db.VarChar(200)
   reportAt         DateTime     @map("report_at") @default(now()) @db.Timestamptz(6)
   status           ReportStatus @map("status") @default(PENDING)
   actionTaken      String?      @map("action_taken") @db.VarChar(200)
-  resolvedByIdUser String?      @map("resolved_by_id_user")
+  resolvedByIdUser Int?         @map("resolved_by_id_user")
   resolvedAt       DateTime?    @map("resolved_at") @db.Timestamptz(6)
 
   reportedBy       User?        @relation("reportedBy", fields: [idUser], references: [id], onDelete: Cascade)
@@ -306,13 +306,13 @@ model Report {
 }
 
 model Notification {
-  idNotification     String                  @id @default(cuid()) @map("id_notification")
-  idUser             String                  @map("id_user")
+  idNotification     Int                     @id @default(autoincrement()) @map("id_notification")
+  idUser             Int                     @map("id_user")
   type               NotificationType        @map("type")
   content            String                  @map("content") @db.VarChar(500)
-  relatedEntityId    String?                 @map("related_entity_id")
+  relatedEntityId    Int?                    @map("related_entity_id")
   relatedEntityType  NotificationEntityType? @map("related_entity_type")
-  triggeredByIdUser  String?                 @map("triggered_by_id_user")
+  triggeredByIdUser  Int?                    @map("triggered_by_id_user")
   isRead             Boolean                 @map("is_read") @default(false)
   createdAt          DateTime                @map("created_at") @default(now()) @db.Timestamptz(6)
 
@@ -328,9 +328,9 @@ model Notification {
 }
 
 model Message {
-  idMessage           String    @id @default(cuid()) @map("id_message")
-  idSender            String    @map("id_sender")
-  idReceiver          String    @map("id_receiver")
+  idMessage           Int       @id @default(autoincrement()) @map("id_message")
+  idSender            Int       @map("id_sender")
+  idReceiver          Int       @map("id_receiver")
   content             String?   @map("content") @db.Text
   sentAt              DateTime  @map("sent_at") @default(now()) @db.Timestamptz(6)
   readAt              DateTime? @map("read_at") @db.Timestamptz(6)
@@ -348,8 +348,8 @@ model Message {
 }
 
 model Attachment {
-  idAttachment String   @id @default(cuid()) @map("id_attachment")
-  idMessage    String   @map("id_message")
+  idAttachment Int      @id @default(autoincrement()) @map("id_attachment")
+  idMessage    Int      @map("id_message")
   fileUrl      String   @map("file_url") @db.VarChar(500)
   fileName     String   @map("file_name") @db.VarChar(255)
   fileType     String   @map("file_type") @db.VarChar(50)
@@ -365,11 +365,11 @@ model Attachment {
 }
 
 model Topic {
-  idTopic       String   @id @default(cuid()) @map("id_topic")
+  idTopic       Int      @id @default(autoincrement()) @map("id_topic")
   name          String   @unique @map("name") @db.VarChar(100)
   description   String?  @map("description") @db.VarChar(500)
   createdAt     DateTime @map("created_at") @default(now()) @db.Timestamptz(6)
-  idUserCreated String   @map("id_user_created")
+  idUserCreated Int      @map("id_user_created")
 
   // Relations
   creator       User     @relation(fields: [idUserCreated], references: [id], onDelete: Cascade)
@@ -380,11 +380,11 @@ model Topic {
 }
 
 model Tag {
-  idTag         String   @id @default(cuid()) @map("id_tag")
+  idTag         Int      @id @default(autoincrement()) @map("id_tag")
   name          String   @unique @map("name") @db.VarChar(50)
   description   String?  @map("description") @db.VarChar(255)
   createdAt     DateTime @map("created_at") @default(now()) @db.Timestamptz(6)
-  idUserCreated String   @map("id_user_created")
+  idUserCreated Int      @map("id_user_created")
 
   // Relations
   creator       User     @relation(fields: [idUserCreated], references: [id], onDelete: Cascade)
@@ -396,8 +396,8 @@ model Tag {
 }
 
 model PostTag {
-  idPost String @map("id_post")
-  idTag  String @map("id_tag")
+  idPost Int @map("id_post")
+  idTag  Int @map("id_tag")
 
   post   Post   @relation(fields: [idPost], references: [id], onDelete: Cascade)
   tag    Tag    @relation(fields: [idTag], references: [idTag], onDelete: Cascade)
@@ -407,8 +407,8 @@ model PostTag {
 }
 
 model TopicTag {
-  idTopic String @map("id_topic")
-  idTag   String @map("id_tag")
+  idTopic Int @map("id_topic")
+  idTag   Int @map("id_tag")
 
   topic   Topic  @relation(fields: [idTopic], references: [idTopic], onDelete: Cascade)
   tag     Tag    @relation(fields: [idTag], references: [idTag], onDelete: Cascade)
@@ -418,9 +418,9 @@ model TopicTag {
 }
 
 model BadWord {
-  idBadWord   String   @id @default(cuid()) @map("id_bad_word")
+  idBadWord   Int      @id @default(autoincrement()) @map("id_bad_word")
   word        String   @unique @map("word") @db.VarChar(100)
-  addedBy     String   @map("added_by")
+  addedBy     Int      @map("added_by")
   createdAt   DateTime @map("created_at") @default(now()) @db.Timestamptz(6)
 
   addedByUser User     @relation(fields: [addedBy], references: [id], onDelete: Cascade)
@@ -430,7 +430,7 @@ model BadWord {
 }
 
 model Region {
-  id          String   @id @default(cuid())
+  id          Int      @id @default(autoincrement())
   name        String   @unique @db.VarChar(100)
   description String?  @db.VarChar(255)
   users       User[]
@@ -440,7 +440,7 @@ model Region {
 }
 
 model Skill {
-  id          String      @id @default(cuid())
+  id          Int         @id @default(autoincrement())
   name        String      @unique @db.VarChar(100)
   description String?     @db.VarChar(500)
   users       UserSkill[]
