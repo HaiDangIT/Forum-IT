@@ -9,6 +9,10 @@ dist/
 build/
 out/
 
+# Ignore JS build files in src (for TypeScript projects)
+src/**/*.js
+src/**/*.js.map
+
 # Environment variables
 .env
 .env.*.local

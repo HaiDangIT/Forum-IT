@@ -1,31 +1,30 @@
 {
-  "name": "back-end",
+  "name": "forum-it-viet-backend",
   "version": "1.0.0",
-  "main": "index.js",
-  "decriptions": "",
-  "type": "commonjs",
-  "author": "",
+  "description": "Backend for Forum IT Viet Project",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "nodemon src/index.ts",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "Dinh Quy",
   "license": "ISC",
-  "keywords": [
-    "forumcongnghe",
-    "forumhay",
-    "forumchonguoiviet"
-  ],
   "dependencies": {
-    "@prisma/client": "^6.12.0",
+    "@prisma/client": "^6.13.0",
     "bcryptjs": "^3.0.2",
-    "cors": "^2.8.5",
-    "dotenv": "^17.2.0",
     "express": "^5.1.0",
     "jsonwebtoken": "^9.0.2"
   },
-  "scripts": {
-    "start": "node src/index.js",
-    "dev": "nodemon src/index.js",
-    "migrate": "prisma migrate dev"
-  },
   "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/express": "^4.17.23",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/node": "^20.19.9",
     "nodemon": "^3.1.10",
-    "prisma": "^6.12.0"
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3"
   }
 }
