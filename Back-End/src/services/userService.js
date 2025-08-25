@@ -2,7 +2,7 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const JWT_SECRET = process.env.JWT_SECRET;
 
-const userRepository = require("../dal/userRespository");
+const userRepository = require("../dal/userRepository");
 
 class UserService {
   constructor() {
@@ -64,7 +64,7 @@ class UserService {
 
     const hashedPassword = await bcrypt.hash(userData.password, 10);
 
-    userData.password = hashedPassword;
+    userData.Password = hashedPassword;
     const newUser = await this.userRepo.createUser(userData);
     return {
       message: "✅ Đăng ký thành công",

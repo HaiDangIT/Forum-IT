@@ -8,7 +8,7 @@ class UserRepository {
   async getUserbyId(id) {
     try {
       return await this.prisma.user.findUnique({
-        where: { id: parseInt(id) },
+        where: { idUser: parseInt(id) },
       });
     } catch (err) {
       throw err;
@@ -17,33 +17,23 @@ class UserRepository {
   }
 
   async getUserByEmail(email) {
-    try {
-      return await this.prisma.user.findUnique({
-        where: { email: email },
-      });
-    } catch (err) {
-      throw err;
-      //   throw new Error("Không tìm thấy người dùng với email này");
-    }
+    return await this.prisma.user.findUnique({
+      where: { email: email },
+    });
   }
 
   async getUserByName(username) {
-    try {
-      return await this.prisma.user.findFirst({
-        where: { username: username },
-      });
-    } catch (err) {
-      throw err;
-      //   throw new Error("Không tìm thấy người dùng với tên này");
-    }
+    return await this.prisma.user.findFirst({
+      where: { username: username },
+    });
   }
 
   async getAllUsers() {
     try {
       return await this.prisma.user.findMany();
     } catch (err) {
-      throw err;
-      //   throw new Error("Không thể lấy danh sách người dùng");
+      console.erroṛ("Lỗi: ", err);
+      throw new Error("Không thể lấy danh sách người dùng");
     }
   }
 
@@ -55,8 +45,8 @@ class UserRepository {
       });
       return roles.map((r) => r.role.name);
     } catch (err) {
-      throw err;
-      //   throw new Error("Không tìm thấy role của người dùng với ID này");
+      console.error("Lỗi: ", err);
+      throw new Error("Không tìm thấy role của người dùng với ID này");
     }
   }
 
