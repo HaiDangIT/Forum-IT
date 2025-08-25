@@ -56,8 +56,7 @@ model Role {
   // Relations
   userRoles   UserRole[]
   roleClaims  RoleClaim[]
-<<<<<<< HEAD
-}
+  }
 
 model RoleClaim {
   idRole             Int     @id
@@ -282,8 +281,6 @@ model BadWord {
   
   // Relations
   addedByUser User @relation(fields: [AddedBy], references: [idUser], onDelete: Cascade)
-=======
->>>>>>> 52c31b1 ([Update] Base)
 }
 
 model RoleClaim {
