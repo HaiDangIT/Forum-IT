@@ -43,10 +43,8 @@ enum CommentStatus {
 }
 
 enum ReactionType {
-  LIKE
-  DISLIKE
-  LOVE
-  LAUGH
+  UPVOTE
+  DOWNVOTE
 
   @@map("reaction_type")
 }
@@ -287,18 +285,18 @@ model Comment {
 
 model Reaction {
   id           Int         @id @default(autoincrement())
-  userId       Int?
+  userId       Int
   postId       Int?
   commentId    Int?
-  reactionType ReactionType?
-  createdAt    DateTime?    @default(now()) @db.Timestamptz(6)
+  reactionType ReactionType
+  createdAt    DateTime    @default(now()) @db.Timestamptz(6)
+  updatedAt    DateTime    @updatedAt @db.Timestamptz(6)
 
   // Relations
-  user         User?        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  post         Post?        @relation(fields: [postId], references: [id], onDelete: Cascade)
-  comment      Comment?     @relation(fields: [commentId], references: [id], onDelete: Cascade)
-
-  // Only one reaction per user per post or comment
+  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post         Post?       @relation(fields: [postId], references: [id], onDelete: Cascade)
+  comment      Comment?    @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  
   @@unique([userId, postId])
   @@unique([userId, commentId])
   @@map("reactions")
