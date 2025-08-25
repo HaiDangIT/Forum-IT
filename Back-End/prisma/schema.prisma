@@ -256,8 +256,6 @@ model Post {
   originalPublishedDate DateTime?   @db.Timestamptz(6)
   createdAt             DateTime?   @default(now()) @db.Timestamptz(6)
   updatedAt             DateTime?   @updatedAt @db.Timestamptz(6)
-  editedAt              DateTime?   @db.Timestamptz(6) // Track last edit time
-  editCount             Int?        @default(0) // Number of edits
   isPinned              Boolean?    @default(false) // Pin post (limit at 3)
   status                PostStatus? @default(ACTIVE)
   viewCount             Int?        @default(0)
@@ -514,13 +512,13 @@ model Skill {
 
 model AuditLog {
   id        Int         @id @default(autoincrement())
-  userId    Int? // Who performed the action (nullable for system actions)
-  action    AuditAction // Sử dụng enum thay vì String
-  entity    String? // Entity type: Post, User, Comment, etc.
-  entityId  Int? // ID of the affected entity
-  oldData   Json? // Data before change (if applicable)
-  newData   Json? // Data after change (if applicable)
-  ipAddress String? // IP address of the actor
+  userId    Int? 
+  action    AuditAction 
+  entity    String? 
+  entityId  Int? 
+  oldData   Json? 
+  newData   Json? 
+  ipAddress String?
   createdAt DateTime    @default(now())
 
   // Relations
