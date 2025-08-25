@@ -102,8 +102,8 @@ model User {
   dateOfBirth       DateTime?   @db.Date
   regionId          Int?
   region            Region?     @relation(fields: [regionId], references: [id])
-  majorId           Int?
-  major             Major?      @relation(fields: [majorId], references: [id])
+  // moved to join table UserMajor to allow many-to-many or additional metadata
+  userMajors         UserMajor[]
   bio               String?     @db.VarChar(500)
   occupation        String?     @db.VarChar(100)
   experience        ExperienceLevel?
@@ -153,8 +153,8 @@ model Role {
 }
 
 model UserRole {
-  roleId Int?
-  userId Int?
+  roleId Int
+  userId Int
 
   // Relations
   role   Role   @relation(fields: [roleId], references: [id], onDelete: Cascade)
@@ -165,22 +165,24 @@ model UserRole {
 }
 
 model UserSkill {
-  userId            Int?
-  skillId           Int?
-  level             ExperienceLevel?
-  yearsOfExperience Int?            @db.SmallInt
+  userId      Int
+  skillId     Int
+  proficiency String?
+  note        String?           @db.VarChar(200)
+  addedAt     DateTime?         @default(now()) @db.Timestamptz(6)
 
   // Relations
-  user              User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  skill             Skill           @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  skill       Skill             @relation(fields: [skillId], references: [id], onDelete: Cascade)
 
   @@id([userId, skillId])
+  @@index([proficiency])
   @@map("user_skills")
 }
 
 model Follow {
-  followerId  Int?
-  followingId Int?
+  followerId  Int
+  followingId Int
   followedAt  DateTime? @default(now()) @db.Timestamptz(6)
 
   // Relations
@@ -197,7 +199,28 @@ model Major {
   description String?  @db.VarChar(255)
   createdAt   DateTime? @default(now()) @db.Timestamptz(6)
 
+  // users associated via join table
+  userMajors  UserMajor[]
+
   @@map("majors")
+}
+
+model UserMajor {
+  userId      Int
+  majorId     Int
+  startDate   DateTime   @default(now()) @db.Timestamptz(6)
+  endDate     DateTime?   @db.Timestamptz(6)
+  position    String?     @db.VarChar(100)
+  company     String?     @db.VarChar(100)
+  description String?     @db.VarChar(500)
+
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  major       Major       @relation(fields: [majorId], references: [id], onDelete: Cascade)
+
+  @@id([userId, majorId, startDate])
+  @@index([userId])
+  @@index([majorId])
+  @@map("user_majors")
 }
 
 model Post {
@@ -220,7 +243,7 @@ model Post {
   deletedAt             DateTime?  @db.Timestamptz(6)
 
   // Relations
-  user                  User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user                  User?      @relation(fields: [userId], references: [id], onDelete: Cascade)
   moderator             User?      @relation("moderatedBy", fields: [moderatedById], references: [id])
   comments              Comment[]
   reactions             Reaction[]
@@ -236,7 +259,7 @@ model Post {
 }
 
 model Comment {
-  id              Int?           @id @default(autoincrement())
+  id              Int           @id @default(autoincrement())
   postId          Int?
   userId          Int?
   content         String?        @db.Text
@@ -248,7 +271,7 @@ model Comment {
 
   // Relations
   post            Post?         @relation(fields: [postId], references: [id], onDelete: Cascade)
-  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user            User?         @relation(fields: [userId], references: [id], onDelete: Cascade)
   parentComment   Comment?      @relation("commentReplies", fields: [parentCommentId], references: [id])
   replies         Comment[]     @relation("commentReplies")
   reactions       Reaction[]
@@ -263,7 +286,7 @@ model Comment {
 }
 
 model Reaction {
-  id           Int?         @id @default(autoincrement())
+  id           Int         @id @default(autoincrement())
   userId       Int?
   postId       Int?
   commentId    Int?
@@ -271,7 +294,7 @@ model Reaction {
   createdAt    DateTime?    @default(now()) @db.Timestamptz(6)
 
   // Relations
-  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user         User?        @relation(fields: [userId], references: [id], onDelete: Cascade)
   post         Post?        @relation(fields: [postId], references: [id], onDelete: Cascade)
   comment      Comment?     @relation(fields: [commentId], references: [id], onDelete: Cascade)
 
@@ -282,10 +305,10 @@ model Reaction {
 }
 
 model Report {
-  idReport         Int?         @id @default(autoincrement()) @map("id_report")
-  idUser           Int?         @map("id_user")
-  idPost           Int?         @map("id_post")
-  idComment        Int?         @map("id_comment")
+  idReport         Int         @id @default(autoincrement()) @map("id_report")
+  idUser           Int         @map("id_user")
+  idPost           Int         @map("id_post")
+  idComment        Int         @map("id_comment")
   reason           String?      @map("reason") @db.VarChar(200)
   reportAt         DateTime?    @map("report_at") @default(now()) @db.Timestamptz(6)
   status           ReportStatus? @map("status") @default(PENDING)
@@ -305,8 +328,8 @@ model Report {
 }
 
 model Notification {
-  idNotification     Int?                    @id @default(autoincrement()) @map("id_notification")
-  idUser             Int?                    @map("id_user")
+  idNotification     Int                    @id @default(autoincrement()) @map("id_notification")
+  idUser             Int                    @map("id_user")
   type               NotificationType?       @map("type")
   content            String?                 @map("content") @db.VarChar(500)
   relatedEntityId    Int?                    @map("related_entity_id")
@@ -327,9 +350,9 @@ model Notification {
 }
 
 model Message {
-  idMessage           Int?      @id @default(autoincrement()) @map("id_message")
-  idSender            Int?      @map("id_sender")
-  idReceiver          Int?      @map("id_receiver")
+  idMessage           Int      @id @default(autoincrement()) @map("id_message")
+  idSender            Int      @map("id_sender")
+  idReceiver          Int      @map("id_receiver")
   content             String?   @map("content") @db.Text
   sentAt              DateTime? @map("sent_at") @default(now()) @db.Timestamptz(6)
   readAt              DateTime? @map("read_at") @db.Timestamptz(6)
@@ -347,8 +370,8 @@ model Message {
 }
 
 model Attachment {
-  idAttachment Int?     @id @default(autoincrement()) @map("id_attachment")
-  idMessage    Int?     @map("id_message")
+  idAttachment Int     @id @default(autoincrement()) @map("id_attachment")
+  idMessage    Int     @map("id_message")
   fileUrl      String?  @map("file_url") @db.VarChar(500)
   fileName     String?  @map("file_name") @db.VarChar(255)
   fileType     String?  @map("file_type") @db.VarChar(50)
@@ -364,14 +387,14 @@ model Attachment {
 }
 
 model Topic {
-  idTopic       Int?     @id @default(autoincrement()) @map("id_topic")
+  idTopic       Int     @id @default(autoincrement()) @map("id_topic")
   name          String?  @unique @map("name") @db.VarChar(100)
   description   String?  @map("description") @db.VarChar(500)
   createdAt     DateTime? @map("created_at") @default(now()) @db.Timestamptz(6)
   idUserCreated Int?     @map("id_user_created")
 
   // Relations
-  creator       User     @relation(fields: [idUserCreated], references: [id], onDelete: Cascade)
+  creator       User?    @relation(fields: [idUserCreated], references: [id], onDelete: Cascade)
   topicTags     TopicTag[]
 
   @@index([name])
@@ -379,14 +402,14 @@ model Topic {
 }
 
 model Tag {
-  idTag         Int?     @id @default(autoincrement()) @map("id_tag")
+  idTag         Int     @id @default(autoincrement()) @map("id_tag")
   name          String?  @unique @map("name") @db.VarChar(50)
   description   String?  @map("description") @db.VarChar(255)
   createdAt     DateTime? @map("created_at") @default(now()) @db.Timestamptz(6)
   idUserCreated Int?     @map("id_user_created")
 
   // Relations
-  creator       User     @relation(fields: [idUserCreated], references: [id], onDelete: Cascade)
+  creator       User?    @relation(fields: [idUserCreated], references: [id], onDelete: Cascade)
   postTags      PostTag[]
   topicTags     TopicTag[]
 
@@ -395,8 +418,8 @@ model Tag {
 }
 
 model PostTag {
-  idPost Int? @map("id_post")
-  idTag  Int? @map("id_tag")
+  idPost Int @map("id_post")
+  idTag  Int @map("id_tag")
 
   post   Post   @relation(fields: [idPost], references: [id], onDelete: Cascade)
   tag    Tag    @relation(fields: [idTag], references: [idTag], onDelete: Cascade)
@@ -406,8 +429,8 @@ model PostTag {
 }
 
 model TopicTag {
-  idTopic Int? @map("id_topic")
-  idTag   Int? @map("id_tag")
+  idTopic Int @map("id_topic")
+  idTag   Int @map("id_tag")
 
   topic   Topic  @relation(fields: [idTopic], references: [idTopic], onDelete: Cascade)
   tag     Tag    @relation(fields: [idTag], references: [idTag], onDelete: Cascade)
@@ -417,32 +440,40 @@ model TopicTag {
 }
 
 model BadWord {
-  idBadWord   Int?     @id @default(autoincrement()) @map("id_bad_word")
+  idBadWord   Int     @id @default(autoincrement()) @map("id_bad_word")
   word        String?  @unique @map("word") @db.VarChar(100)
   addedBy     Int?     @map("added_by")
   createdAt   DateTime? @map("created_at") @default(now()) @db.Timestamptz(6)
 
-  addedByUser User     @relation(fields: [addedBy], references: [id], onDelete: Cascade)
+  addedByUser User?    @relation(fields: [addedBy], references: [id], onDelete: Cascade)
 
   @@index([word])
   @@map("bad_words")
 }
 
 model Region {
-  id          Int?     @id @default(autoincrement())
+  id          Int     @id @default(autoincrement())
   name        String?  @unique @db.VarChar(100)
   description String?  @db.VarChar(255)
   createdAt   DateTime? @default(now()) @db.Timestamptz(6)
+
+  // Relations
+  users       User[]
 
   @@map("regions")
 }
 
 model Skill {
-  id          Int?        @id @default(autoincrement())
+  id          Int        @id @default(autoincrement())
   name        String?     @unique @db.VarChar(100)
   description String?     @db.VarChar(500)
+  category    String?     @db.VarChar(50)
   createdAt   DateTime?   @default(now()) @db.Timestamptz(6)
 
+  // Relations
+  userSkills  UserSkill[]
+
   @@index([name])
+  @@index([category])
   @@map("skills")
 }
