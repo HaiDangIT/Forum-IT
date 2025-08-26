@@ -1,0 +1,278 @@
+:root {
+  --color-primary: #2387FA;           
+  --color-primary-dark: #1856A7;      
+  --color-secondary: #6C47AA;        
+  --color-accent: #2CD4D9;            
+  --color-success: #42E6A4;           
+  --color-warning: #FFD166;          
+  --color-error: #FF5466;            
+  --color-bg-light: #F0F6FF;     
+  --color-surface: #F5F8FC;          
+  --color-text-main: #222B45;        
+  --color-text-sub: #75809A;          
+  --color-border: #E2EAF7;  
+
+  /* Font Variables */
+  --font-primary: 'Be Vietnam Pro', sans-serif;
+  --font-secondary: 'Inter', sans-serif;
+  --font-mono: 'IBM Plex Mono', monospace;
+
+  /* Spacing & Layout */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+
+  /* Border Radius */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1);
+}
+
+/* Dark Theme Variables */
+.dark-theme {
+  --color-bg-light: #1A1F2E;        
+  --color-surface: #242B3D;         
+  --color-border: #3A4553;          
+  --color-text-main: #F1F5F9;       
+  --color-text-sub: #94A3B8;        
+  --color-primary: #3B82F6;         
+  --color-primary-dark: #1D4ED8;    
+  --color-secondary: #8B5CF6;       
+  --color-accent: #06B6D4;          
+  --color-success: #10B981;         
+  --color-warning: #F59E0B;         
+  --color-error: #EF4444;           
+}
+
+/* ===== BASE STYLES ===== */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: var(--font-primary);
+  background-color: var(--color-bg-light);
+  color: var(--color-text-main);
+  line-height: 1.6;
+  transition: all 0.3s ease;
+}
+
+/* ===== MINIMAL BUTTON SYSTEM ===== */
+.btn-primary,
+.btn-secondary,
+.btn-ghost,
+.btn-neutral,
+.btn-follow,
+.btn-connect,
+.action-btn {
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: var(--font-primary);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  text-decoration: none;
+  line-height: 1;
+  font-weight: 500;
+  border: none;
+}
+
+.btn-icon {
+  padding: var(--spacing-sm);
+  width: auto;
+  height: auto;
+  min-width: 36px;
+  justify-content: center;
+}
+
+/* PRIMARY - Chỉ CTA chính */
+.btn-primary {
+  background: var(--color-primary);
+  color: white;
+  font-weight: 600;
+}
+
+.btn-primary:hover {
+  background: var(--color-primary-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(35, 135, 250, 0.25);
+}
+
+/* GHOST - Minimal, không làm phân tâm */
+.btn-ghost {
+  background: var(--color-bg-light);
+  color: var(--color-text-sub);
+  border: 1px solid var(--color-border);
+  font-weight: 400;
+}
+
+.btn-ghost:hover {
+  background: var(--color-surface);
+  color: var(--color-text-main);
+  border-color: var(--color-primary);
+}
+
+/* Connect button */
+.btn-connect {
+  background: transparent;
+  color: var(--color-primary);
+  border: 1px solid var(--color-primary);
+  font-size: 12px;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  font-weight: 500;
+}
+
+.btn-connect:hover {
+  background: var(--color-primary);
+  color: white;
+}
+
+.btn-connect.connected {
+  background: var(--color-bg-light);
+  color: var(--color-text-sub);
+  border: 1px solid var(--color-border);
+}
+
+/* Action buttons */
+.action-btn {
+  background: none;
+  border: none;
+  color: var(--color-text-sub);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  font-size: 13px;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--radius-sm);
+  transition: all 0.2s ease;
+  font-weight: 400;
+}
+
+.action-btn:hover {
+  background: var(--color-bg-light);
+  color: var(--color-text-main);
+}
+
+.action-btn.active {
+  color: var(--color-primary);
+}
+
+/* ===== HEADER NAVIGATION ===== */
+ .navbar {
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  padding: 16px 0;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.nav-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  /* padding: 0 var(--spacing-md); */
+  padding: 0 var(--spacing-md);
+}
+
+.nav-brand h2 {
+  color: var(--color-primary);
+  font-family: var(--font-primary);
+  font-weight: 700;
+}
+
+.nav-menu {
+  display: flex;
+  gap: var(--spacing-lg);
+}
+
+.nav-link {
+  text-decoration: none;
+  color: var(--color-text-sub);
+  font-weight: 500;
+  padding: var(--spacing-sm) var(--spacing-md);
+  height: 100%;
+  border-radius: var(--radius-md);
+  transition: all 0.2s ease;
+}
+
+.nav-link:hover {
+  background: rgba(35, 135, 250, 0.08);
+  color: var(--color-primary);
+}
+
+.nav-link.active {
+  background: var(--color-primary);
+  color: white;
+}
+
+.nav-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.user-avatar img {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+}
+
+/* ===== THEME TOGGLE ===== */
+.theme-toggle {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  cursor: pointer;
+  font-size: 18px;
+  box-shadow: 0 4px 12px rgba(35, 135, 250, 0.3);
+  transition: all 0.2s ease;
+}
+
+.theme-toggle:hover {
+  transform: scale(1.05);
+}
+
+/* Dark theme cho tags */
+body.dark-theme .tag, body.dark-theme .tag-box {
+  background: #232730;
+  color: #C5CBD8;
+  border-color: #313847;
+}
+
+body.dark-theme .tag:hover, body.dark-theme .tag-box:hover,
+body.dark-theme .tag.active, body.dark-theme .tag-box.active {
+  background: #2387fa;
+  color: #fff;
+  border-color: #2387fa;
+}
+
+body.dark-theme .tag-box .tag-count {
+  background: #2B313C;
+  color: #B9C2D1;
+  border: 1px solid #232730;
+}

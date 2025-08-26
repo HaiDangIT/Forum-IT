@@ -1,0 +1,443 @@
+
+// Enums
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+
+  @@map("gender")
+}
+
+enum PostType {
+  DISCUSSION
+  QUESTION
+  NEWS
+  TUTORIAL
+
+  @@map("post_type")
+}
+
+enum PostStatus {
+  DRAFT
+  ACTIVE
+  HIDDEN
+  DELETED
+
+  @@map("post_status")
+}
+
+enum CommentStatus {
+  ACTIVE
+  HIDDEN
+  DELETED
+
+  @@map("comment_status")
+}
+
+enum ReactionType {
+  LIKE
+  DISLIKE
+  LOVE
+  LAUGH
+
+  @@map("reaction_type")
+}
+
+enum ReportStatus {
+  PENDING
+  RESOLVED
+  DISMISSED
+
+  @@map("report_status")
+}
+
+enum ExperienceLevel {
+  FRESHER
+  JUNIOR
+  MIDDLE
+  SENIOR
+  LEAD
+  PRINCIPAL
+  MANAGER
+  DIRECTOR
+}
+
+enum NotificationType {
+  NEW_COMMENT_ON_POST
+  NEW_REACTION_ON_POST
+  NEW_REACTION_ON_COMMENT
+  NEW_FOLLOW
+  POST_MENTION
+  COMMENT_MENTION
+  REPORT_STATUS_UPDATE
+  ADMIN_MESSAGE
+}
+
+enum NotificationEntityType {
+  POST
+  COMMENT
+  USER
+  REPORT
+  MESSAGE
+}
+
+// Models
+model User {
+  id                String      @id @default(cuid())
+  username          String      @unique @db.VarChar(50)
+  password          String      @db.VarChar(255)
+  email             String      @unique @db.VarChar(255)
+  firstName         String?     @db.VarChar(50)
+  lastName          String?     @db.VarChar(50)
+  gender            Gender?
+  avatar            String?     @db.VarChar(500)
+  dateOfBirth       DateTime?   @db.Date
+  regionId          String?
+  region            Region?     @relation(fields: [regionId], references: [id])
+  majorId           String?
+  major             Major?      @relation(fields: [majorId], references: [id])
+  bio               String?     @db.VarChar(500)
+  occupation        String?     @db.VarChar(100)
+  experience        ExperienceLevel?
+  profileVisibility Boolean     @default(true)
+  isBanned          Boolean     @default(false)
+  createdAt         DateTime    @default(now()) @db.Timestamptz(6)
+  lastLoginAt       DateTime?   @db.Timestamptz(6)
+
+  // Relations
+  roles                 UserRole[]
+  skills                UserSkill[]
+  followers             Follow[]         @relation("userFollowing")
+  following             Follow[]         @relation("userFollower")
+  posts                 Post[]
+  comments              Comment[]
+  reactions             Reaction[]
+  reportsMade           Report[]         @relation("reportedBy")
+  messagesSent          Message[]        @relation("messageSender")
+  messagesReceived      Message[]        @relation("messageReceiver")
+  topicsCreated         Topic[]
+  tagsCreated           Tag[]
+  badWordsAdded         BadWord[]
+  moderatedPosts        Post[]           @relation("moderatedBy")
+  resolvedReports       Report[]         @relation("resolvedBy")
+  notifications         Notification[]   @relation("notificationRecipient")
+  notificationsTriggered Notification[]  @relation("notificationTrigger")
+
+  @@index([email])
+  @@index([username])
+  @@index([createdAt])
+  @@map("users")
+}
+
+model Role {
+  id                  String  @id @default(cuid())
+  name                String  @unique @db.VarChar(50)
+  managePost          Boolean @default(false)
+  manageUser          Boolean @default(false)
+  canCreateNews       Boolean @default(false)
+  canViewReports      Boolean @default(false)
+  canManageTopicsTags Boolean @default(false)
+
+  // Relations
+  users               UserRole[]
+
+  @@map("roles")
+}
+
+model UserRole {
+  roleId String
+  userId String
+
+  // Relations
+  role   Role   @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, userId])
+  @@map("user_roles")
+}
+
+model UserSkill {
+  userId            String
+  skillId           String
+  level             ExperienceLevel
+  yearsOfExperience Int?            @db.SmallInt
+
+  // Relations
+  user              User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  skill             Skill           @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@id([userId, skillId])
+  @@map("user_skills")
+}
+
+model Follow {
+  followerId  String
+  followingId String
+  followedAt  DateTime @default(now()) @db.Timestamptz(6)
+
+  // Relations
+  follower    User     @relation("userFollower", fields: [followerId], references: [id], onDelete: Cascade)
+  following   User     @relation("userFollowing", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@id([followerId, followingId])
+  @@map("follows")
+}
+
+model Major {
+  id          String   @id @default(cuid())
+  name        String   @unique @db.VarChar(100)
+  description String?  @db.VarChar(255)
+  users       User[]
+  createdAt   DateTime @default(now()) @db.Timestamptz(6)
+
+  @@map("majors")
+}
+
+model Post {
+  id                    String     @id @default(cuid())
+  userId                String
+  title                 String     @db.VarChar(300)
+  content               String     @db.Text
+  postType              PostType
+  sourceUrl             String?    @db.VarChar(500)
+  originalAuthor        String?    @db.VarChar(100)
+  originalPublishedDate DateTime?  @db.Timestamptz(6)
+  createdAt             DateTime   @default(now()) @db.Timestamptz(6)
+  updatedAt             DateTime   @updatedAt @db.Timestamptz(6)
+  status                PostStatus @default(ACTIVE)
+  viewCount             Int        @default(0)
+  moderatedById         String?
+  moderatedAt           DateTime?  @db.Timestamptz(6)
+  wordCount             Int?
+  isDeleted             Boolean    @default(false)
+  deletedAt             DateTime?  @db.Timestamptz(6)
+
+  // Relations
+  user                  User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  moderator             User?      @relation("moderatedBy", fields: [moderatedById], references: [id])
+  comments              Comment[]
+  reactions             Reaction[]
+  reports               Report[]
+  postTags              PostTag[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([postType])
+  @@index([createdAt])
+  @@index([viewCount])
+  @@map("posts")
+}
+
+model Comment {
+  id              String        @id @default(cuid())
+  postId          String
+  userId          String
+  content         String        @db.Text
+  createdAt       DateTime      @default(now()) @db.Timestamptz(6)
+  updatedAt       DateTime      @updatedAt @db.Timestamptz(6)
+  parentCommentId String?
+  isDeleted       Boolean       @default(false)
+  status          CommentStatus @default(ACTIVE)
+
+  // Relations
+  post            Post?         @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parentComment   Comment?      @relation("commentReplies", fields: [parentCommentId], references: [id])
+  replies         Comment[]     @relation("commentReplies")
+  reactions       Reaction[]
+  reports         Report[]
+
+  @@index([postId])
+  @@index([userId])
+  @@index([parentCommentId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("comments")
+}
+
+model Reaction {
+  id           String       @id @default(cuid())
+  userId       String
+  postId       String?
+  commentId    String?
+  reactionType ReactionType
+  createdAt    DateTime     @default(now()) @db.Timestamptz(6)
+
+  // Relations
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post         Post?        @relation(fields: [postId], references: [id], onDelete: Cascade)
+  comment      Comment?     @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  // Only one reaction per user per post or comment
+  @@unique([userId, postId])
+  @@unique([userId, commentId])
+  @@map("reactions")
+}
+
+model Report {
+  idReport         String       @id @default(cuid()) @map("id_report")
+  idUser           String       @map("id_user")
+  idPost           String?      @map("id_post")
+  idComment        String?      @map("id_comment")
+  reason           String       @map("reason") @db.VarChar(200)
+  reportAt         DateTime     @map("report_at") @default(now()) @db.Timestamptz(6)
+  status           ReportStatus @map("status") @default(PENDING)
+  actionTaken      String?      @map("action_taken") @db.VarChar(200)
+  resolvedByIdUser String?      @map("resolved_by_id_user")
+  resolvedAt       DateTime?    @map("resolved_at") @db.Timestamptz(6)
+
+  reportedBy       User?        @relation("reportedBy", fields: [idUser], references: [id], onDelete: Cascade)
+  post             Post?        @relation(fields: [idPost], references: [id], onDelete: Cascade)
+  comment          Comment?     @relation(fields: [idComment], references: [id], onDelete: Cascade)
+  resolvedBy       User?        @relation("resolvedBy", fields: [resolvedByIdUser], references: [id])
+
+  @@index([idUser])
+  @@index([status])
+  @@index([reportAt])
+  @@map("reports")
+}
+
+model Notification {
+  idNotification     String                  @id @default(cuid()) @map("id_notification")
+  idUser             String                  @map("id_user")
+  type               NotificationType        @map("type")
+  content            String                  @map("content") @db.VarChar(500)
+  relatedEntityId    String?                 @map("related_entity_id")
+  relatedEntityType  NotificationEntityType? @map("related_entity_type")
+  triggeredByIdUser  String?                 @map("triggered_by_id_user")
+  isRead             Boolean                 @map("is_read") @default(false)
+  createdAt          DateTime                @map("created_at") @default(now()) @db.Timestamptz(6)
+
+  // Relations
+  user               User                    @relation("notificationRecipient", fields: [idUser], references: [id], onDelete: Cascade)
+  triggeredByUser    User?                   @relation("notificationTrigger", fields: [triggeredByIdUser], references: [id])
+
+  @@index([idUser])
+  @@index([type])
+  @@index([isRead])
+  @@index([createdAt])
+  @@map("notifications")
+}
+
+model Message {
+  idMessage           String    @id @default(cuid()) @map("id_message")
+  idSender            String    @map("id_sender")
+  idReceiver          String    @map("id_receiver")
+  content             String?   @map("content") @db.Text
+  sentAt              DateTime  @map("sent_at") @default(now()) @db.Timestamptz(6)
+  readAt              DateTime? @map("read_at") @db.Timestamptz(6)
+  isDeletedBySender   Boolean   @map("is_deleted_by_sender") @default(false)
+  isDeletedByReceiver Boolean   @map("is_deleted_by_receiver") @default(false)
+
+  // Relations
+  sender              User      @relation("messageSender", fields: [idSender], references: [id], onDelete: Cascade)
+  receiver            User      @relation("messageReceiver", fields: [idReceiver], references: [id], onDelete: Cascade)
+  attachments         Attachment[]
+
+  @@index([idSender, idReceiver])
+  @@index([sentAt])
+  @@map("messages")
+}
+
+model Attachment {
+  idAttachment String   @id @default(cuid()) @map("id_attachment")
+  idMessage    String   @map("id_message")
+  fileUrl      String   @map("file_url") @db.VarChar(500)
+  fileName     String   @map("file_name") @db.VarChar(255)
+  fileType     String   @map("file_type") @db.VarChar(50)
+  fileSize     Int      @map("file_size")
+  uploadedAt   DateTime @map("uploaded_at") @default(now()) @db.Timestamptz(6)
+  thumbnailUrl String?  @map("thumbnail_url") @db.VarChar(500)
+
+  // Relations
+  message      Message  @relation(fields: [idMessage], references: [idMessage], onDelete: Cascade)
+
+  @@index([idMessage])
+  @@map("attachments")
+}
+
+model Topic {
+  idTopic       String   @id @default(cuid()) @map("id_topic")
+  name          String   @unique @map("name") @db.VarChar(100)
+  description   String?  @map("description") @db.VarChar(500)
+  createdAt     DateTime @map("created_at") @default(now()) @db.Timestamptz(6)
+  idUserCreated String   @map("id_user_created")
+
+  // Relations
+  creator       User     @relation(fields: [idUserCreated], references: [id], onDelete: Cascade)
+  topicTags     TopicTag[]
+
+  @@index([name])
+  @@map("topics")
+}
+
+model Tag {
+  idTag         String   @id @default(cuid()) @map("id_tag")
+  name          String   @unique @map("name") @db.VarChar(50)
+  description   String?  @map("description") @db.VarChar(255)
+  createdAt     DateTime @map("created_at") @default(now()) @db.Timestamptz(6)
+  idUserCreated String   @map("id_user_created")
+
+  // Relations
+  creator       User     @relation(fields: [idUserCreated], references: [id], onDelete: Cascade)
+  postTags      PostTag[]
+  topicTags     TopicTag[]
+
+  @@index([name])
+  @@map("tags")
+}
+
+model PostTag {
+  idPost String @map("id_post")
+  idTag  String @map("id_tag")
+
+  post   Post   @relation(fields: [idPost], references: [id], onDelete: Cascade)
+  tag    Tag    @relation(fields: [idTag], references: [idTag], onDelete: Cascade)
+
+  @@id([idPost, idTag])
+  @@map("post_tags")
+}
+
+model TopicTag {
+  idTopic String @map("id_topic")
+  idTag   String @map("id_tag")
+
+  topic   Topic  @relation(fields: [idTopic], references: [idTopic], onDelete: Cascade)
+  tag     Tag    @relation(fields: [idTag], references: [idTag], onDelete: Cascade)
+
+  @@id([idTopic, idTag])
+  @@map("topic_tags")
+}
+
+model BadWord {
+  idBadWord   String   @id @default(cuid()) @map("id_bad_word")
+  word        String   @unique @map("word") @db.VarChar(100)
+  addedBy     String   @map("added_by")
+  createdAt   DateTime @map("created_at") @default(now()) @db.Timestamptz(6)
+
+  addedByUser User     @relation(fields: [addedBy], references: [id], onDelete: Cascade)
+
+  @@index([word])
+  @@map("bad_words")
+}
+
+model Region {
+  id          String   @id @default(cuid())
+  name        String   @unique @db.VarChar(100)
+  description String?  @db.VarChar(255)
+  users       User[]
+  createdAt   DateTime @default(now()) @db.Timestamptz(6)
+
+  @@map("regions")
+}
+
+model Skill {
+  id          String      @id @default(cuid())
+  name        String      @unique @db.VarChar(100)
+  description String?     @db.VarChar(500)
+  users       UserSkill[]
+  createdAt   DateTime    @default(now()) @db.Timestamptz(6)
+
+  @@index([name])
+  @@map("skills")
+}
