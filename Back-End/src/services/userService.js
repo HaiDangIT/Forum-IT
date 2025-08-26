@@ -64,7 +64,7 @@ class UserService {
 
     const hashedPassword = await bcrypt.hash(userData.password, 10);
 
-    userData.Password = hashedPassword;
+    userData.password = hashedPassword;
     const newUser = await this.userRepo.createUser(userData);
     return {
       message: "✅ Đăng ký thành công",
